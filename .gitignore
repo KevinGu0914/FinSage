@@ -1,0 +1,160 @@
+# =====================================================
+# FinSage Project .gitignore
+# =====================================================
+
+# --------------------- Python ---------------------
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+pytest_debug.log
+
+# Translations
+*.mo
+*.pot
+
+# --------------------- Environment ---------------------
+# dotenv
+.env
+.env.local
+.env.*.local
+*.env
+
+# virtualenv
+.venv/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# --------------------- IDE / Editor ---------------------
+# VSCode
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# Spyder
+.spyderproject
+.spyproject
+
+# Rope
+.ropeproject
+
+# --------------------- OS ---------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# --------------------- Project Specific ---------------------
+# Data cache
+data/cache/
+*.parquet
+*.h5
+*.hdf5
+
+# Results and logs (keep structure, ignore content)
+results/*.json
+results/*.csv
+results/logs/
+logs/*.log
+logs/*.txt
+
+# Checkpoints
+checkpoints/
+
+# Memory (if using persistent memory)
+memory/
+
+# API keys and secrets
+secrets/
+*.pem
+*.key
+
+# Model weights (if any)
+models/
+*.pt
+*.pth
+*.onnx
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+
+# --------------------- Documentation ---------------------
+docs/_build/
+site/
+
+# --------------------- IDE Config ---------------------
+.claude/

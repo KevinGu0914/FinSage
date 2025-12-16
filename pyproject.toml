@@ -1,0 +1,144 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "finsage"
+version = "2.0.0"
+description = "FinSage - AI-Powered Multi-Asset Portfolio Management System"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [
+    {name = "FinSage Team"}
+]
+keywords = [
+    "finance",
+    "portfolio-management",
+    "ai",
+    "llm",
+    "multi-asset",
+    "hedging",
+    "risk-management",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+
+dependencies = [
+    "numpy>=1.21.0",
+    "pandas>=1.3.0",
+    "scipy>=1.7.0",
+    "openai>=1.0.0",
+    "yfinance>=0.2.0",
+    "python-dotenv>=0.19.0",
+    "requests>=2.26.0",
+    "tqdm>=4.62.0",
+    # Additional core dependencies
+    "anthropic>=0.18.0",
+    "cvxpy>=1.4.0",
+    "python-dateutil>=2.8.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=3.0.0",
+    "black>=22.0.0",
+    "isort>=5.10.0",
+    "flake8>=4.0.0",
+    "mypy>=0.950",
+]
+docs = [
+    "sphinx>=4.0.0",
+    "sphinx-rtd-theme>=1.0.0",
+]
+visualization = [
+    "matplotlib>=3.7.0",
+    "plotly>=5.14.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/finsage"
+Documentation = "https://finsage.readthedocs.io"
+Repository = "https://github.com/yourusername/finsage"
+Issues = "https://github.com/yourusername/finsage/issues"
+
+[project.scripts]
+finsage = "finsage.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["finsage*"]
+
+[tool.setuptools.package-data]
+finsage = ["py.typed"]
+
+# Black formatter configuration
+[tool.black]
+line-length = 100
+target-version = ['py39', 'py310', 'py311']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | __pycache__
+)/
+'''
+
+# isort configuration
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["finsage"]
+skip = [".venv", "venv", "__pycache__"]
+
+# pytest configuration
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+# mypy configuration
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+exclude = [
+    "tests/",
+    "docs/",
+]
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["finsage"]
+omit = ["tests/*", "*/__pycache__/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]

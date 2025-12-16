@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>FinSage V2 智能体I/O详解</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="-" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">FinSage V2 智能体I/O详解</h1>
+</header>
+<h1 id="finsage-v2-智能体输入输出详解">FinSage V2 智能体输入输出详解</h1>
+<h2 id="专家智能体-expert-agents">1. 专家智能体 (Expert Agents)</h2>
+<p>所有专家继承自 <code>BaseExpert</code>，共享相同的输入输出结构。</p>
+<h3 id="stockexpert-股票专家">1.1 StockExpert (股票专家)</h3>
+<p><strong>输入:</strong></p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>market_data: Dict[<span class="bu">str</span>, Any]</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;SPY&quot;</span>: {<span class="st">&quot;close&quot;</span>: <span class="fl">450.25</span>, <span class="st">&quot;open&quot;</span>: <span class="fl">448.0</span>, <span class="st">&quot;high&quot;</span>: <span class="fl">451.0</span>, <span class="st">&quot;low&quot;</span>: <span class="fl">447.5</span>, <span class="st">&quot;volume&quot;</span>: <span class="dv">85000000</span>, <span class="st">&quot;change_pct&quot;</span>: <span class="fl">0.5</span>},</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;QQQ&quot;</span>: {<span class="st">&quot;close&quot;</span>: <span class="fl">380.50</span>, <span class="st">&quot;open&quot;</span>: <span class="fl">378.0</span>, <span class="st">&quot;high&quot;</span>: <span class="fl">382.0</span>, <span class="st">&quot;low&quot;</span>: <span class="fl">377.0</span>, <span class="st">&quot;volume&quot;</span>: <span class="dv">45000000</span>, <span class="st">&quot;change_pct&quot;</span>: <span class="fl">0.66</span>},</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;AAPL&quot;</span>: {...},</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;NVDA&quot;</span>: {...},</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>news_data: List[Dict]</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>[</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    {<span class="st">&quot;title&quot;</span>: <span class="st">&quot;Fed signals rate cut&quot;</span>, <span class="st">&quot;published&quot;</span>: <span class="st">&quot;2024-10-15&quot;</span>, <span class="st">&quot;sentiment&quot;</span>: <span class="st">&quot;positive&quot;</span>, <span class="st">&quot;symbols&quot;</span>: [<span class="st">&quot;SPY&quot;</span>]},</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    {<span class="st">&quot;title&quot;</span>: <span class="st">&quot;Tech earnings beat expectations&quot;</span>, <span class="st">&quot;sentiment&quot;</span>: <span class="st">&quot;positive&quot;</span>, <span class="st">&quot;symbols&quot;</span>: [<span class="st">&quot;QQQ&quot;</span>, <span class="st">&quot;AAPL&quot;</span>]},</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>technical_indicators: Dict[<span class="bu">str</span>, Any]</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;SPY&quot;</span>: {<span class="st">&quot;rsi_14&quot;</span>: <span class="fl">58.5</span>, <span class="st">&quot;macd&quot;</span>: <span class="fl">2.3</span>, <span class="st">&quot;macd_signal&quot;</span>: <span class="fl">1.8</span>, <span class="st">&quot;sma_20&quot;</span>: <span class="fl">445.0</span>, <span class="st">&quot;sma_50&quot;</span>: <span class="fl">440.0</span>},</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;QQQ&quot;</span>: {<span class="st">&quot;rsi_14&quot;</span>: <span class="fl">62.0</span>, <span class="st">&quot;macd&quot;</span>: <span class="fl">3.1</span>, <span class="st">&quot;macd_signal&quot;</span>: <span class="fl">2.5</span>, <span class="st">&quot;sma_20&quot;</span>: <span class="fl">375.0</span>, <span class="st">&quot;sma_50&quot;</span>: <span class="fl">368.0</span>},</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>macro_data: Optional[Dict[<span class="bu">str</span>, Any]]  <span class="co"># 可选</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;vix&quot;</span>: <span class="fl">18.5</span>,</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;sp500_pe&quot;</span>: <span class="fl">22.3</span>,</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;market_breadth&quot;</span>: <span class="fl">0.65</span>,</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p><strong>输出:</strong></p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>ExpertReport(</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    expert_name<span class="op">=</span><span class="st">&quot;Stock Expert&quot;</span>,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    asset_class<span class="op">=</span><span class="st">&quot;stocks&quot;</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    timestamp<span class="op">=</span><span class="st">&quot;2024-10-15T14:30:00&quot;</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    recommendations<span class="op">=</span>[</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>        ExpertRecommendation(</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>            asset_class<span class="op">=</span><span class="st">&quot;stocks&quot;</span>,</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>            symbol<span class="op">=</span><span class="st">&quot;SPY&quot;</span>,</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>            action<span class="op">=</span>Action.BUY_50,  <span class="co"># V2支持: SHORT_25/50/75/100</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>            confidence<span class="op">=</span><span class="fl">0.75</span>,</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>            target_weight<span class="op">=</span><span class="fl">0.12</span>,   <span class="co"># 负数表示做空</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>            reasoning<span class="op">=</span><span class="st">&quot;Strong momentum with Fed support&quot;</span>,</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>            market_view<span class="op">=</span>{<span class="st">&quot;trend&quot;</span>: <span class="st">&quot;bullish&quot;</span>, <span class="st">&quot;momentum&quot;</span>: <span class="st">&quot;positive&quot;</span>},</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>            risk_assessment<span class="op">=</span>{<span class="st">&quot;volatility_risk&quot;</span>: <span class="fl">0.15</span>, <span class="st">&quot;downside_risk&quot;</span>: <span class="fl">0.08</span>},</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>        ExpertRecommendation(</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>            asset_class<span class="op">=</span><span class="st">&quot;stocks&quot;</span>,</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>            symbol<span class="op">=</span><span class="st">&quot;NVDA&quot;</span>,</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>            action<span class="op">=</span>Action.BUY_75,</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>            confidence<span class="op">=</span><span class="fl">0.80</span>,</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>            target_weight<span class="op">=</span><span class="fl">0.10</span>,</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>            reasoning<span class="op">=</span><span class="st">&quot;AI demand driving growth&quot;</span>,</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>            market_view<span class="op">=</span>{<span class="st">&quot;trend&quot;</span>: <span class="st">&quot;bullish&quot;</span>, <span class="st">&quot;sector&quot;</span>: <span class="st">&quot;technology&quot;</span>},</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>            risk_assessment<span class="op">=</span>{<span class="st">&quot;volatility_risk&quot;</span>: <span class="fl">0.25</span>, <span class="st">&quot;downside_risk&quot;</span>: <span class="fl">0.12</span>},</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>    overall_view<span class="op">=</span><span class="st">&quot;bullish&quot;</span>,  <span class="co"># bullish / bearish / neutral</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>    sector_allocation<span class="op">=</span>{<span class="st">&quot;SPY&quot;</span>: <span class="fl">0.30</span>, <span class="st">&quot;QQQ&quot;</span>: <span class="fl">0.25</span>, <span class="st">&quot;NVDA&quot;</span>: <span class="fl">0.25</span>, <span class="st">&quot;AAPL&quot;</span>: <span class="fl">0.20</span>},</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>    key_factors<span class="op">=</span>[<span class="st">&quot;Fed dovish stance&quot;</span>, <span class="st">&quot;Strong earnings&quot;</span>, <span class="st">&quot;AI momentum&quot;</span>],</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<hr />
+<h3 id="bondexpert-债券专家">1.2 BondExpert (债券专家)</h3>
+<p><strong>输入:</strong></p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>market_data: Dict[<span class="bu">str</span>, Any]</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;TLT&quot;</span>: {<span class="st">&quot;close&quot;</span>: <span class="fl">92.45</span>, <span class="st">&quot;change_pct&quot;</span>: <span class="op">-</span><span class="fl">0.85</span>, <span class="st">&quot;yield&quot;</span>: <span class="fl">4.85</span>},</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;IEF&quot;</span>: {<span class="st">&quot;close&quot;</span>: <span class="fl">95.20</span>, <span class="st">&quot;change_pct&quot;</span>: <span class="op">-</span><span class="fl">0.42</span>, <span class="st">&quot;yield&quot;</span>: <span class="fl">4.25</span>},</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;SHY&quot;</span>: {<span class="st">&quot;close&quot;</span>: <span class="fl">82.10</span>, <span class="st">&quot;change_pct&quot;</span>: <span class="op">-</span><span class="fl">0.05</span>, <span class="st">&quot;yield&quot;</span>: <span class="fl">5.10</span>},</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;rates&quot;</span>: {</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;fed_funds&quot;</span>: <span class="fl">5.25</span>,</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;treasury_2y&quot;</span>: <span class="fl">4.95</span>,</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;treasury_10y&quot;</span>: <span class="fl">4.65</span>,</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;treasury_30y&quot;</span>: <span class="fl">4.85</span>,</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;spread_2s10s&quot;</span>: <span class="op">-</span><span class="dv">30</span>,  <span class="co"># 倒挂 bps</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>news_data: List[Dict]</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>[</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    {<span class="st">&quot;title&quot;</span>: <span class="st">&quot;FOMC minutes reveal hawkish stance&quot;</span>, <span class="st">&quot;sentiment&quot;</span>: <span class="st">&quot;negative&quot;</span>},</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>    {<span class="st">&quot;title&quot;</span>: <span class="st">&quot;Inflation remains sticky&quot;</span>, <span class="st">&quot;sentiment&quot;</span>: <span class="st">&quot;negative&quot;</span>},</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>technical_indicators: Dict[<span class="bu">str</span>, Any]</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;TLT&quot;</span>: {<span class="st">&quot;rsi_14&quot;</span>: <span class="fl">35.2</span>, <span class="st">&quot;macd&quot;</span>: <span class="op">-</span><span class="fl">1.25</span>, <span class="st">&quot;trend&quot;</span>: <span class="st">&quot;downtrend&quot;</span>},</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p><strong>输出:</strong></p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>ExpertReport(</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    expert_name<span class="op">=</span><span class="st">&quot;Bond Expert&quot;</span>,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    asset_class<span class="op">=</span><span class="st">&quot;bonds&quot;</span>,</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    timestamp<span class="op">=</span><span class="st">&quot;2024-10-15T14:30:00&quot;</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    recommendations<span class="op">=</span>[</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>        ExpertRecommendation(</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>            asset_class<span class="op">=</span><span class="st">&quot;bonds&quot;</span>,</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>            symbol<span class="op">=</span><span class="st">&quot;TLT&quot;</span>,</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>            action<span class="op">=</span>Action.SHORT_50,  <span class="co"># V2关键: 利率上升时做空长债</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>            confidence<span class="op">=</span><span class="fl">0.70</span>,</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>            target_weight<span class="op">=-</span><span class="fl">0.08</span>,    <span class="co"># 负权重 = 做空</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>            reasoning<span class="op">=</span><span class="st">&quot;Rising rates pressure long-duration bonds&quot;</span>,</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>            market_view<span class="op">=</span>{</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>                <span class="st">&quot;rate_view&quot;</span>: <span class="st">&quot;hawkish&quot;</span>,</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>                <span class="st">&quot;duration_preference&quot;</span>: <span class="st">&quot;short&quot;</span>,</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>                <span class="st">&quot;credit_view&quot;</span>: <span class="st">&quot;neutral&quot;</span>,</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>            },</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>            risk_assessment<span class="op">=</span>{<span class="st">&quot;duration_risk&quot;</span>: <span class="fl">0.35</span>, <span class="st">&quot;credit_risk&quot;</span>: <span class="fl">0.05</span>},</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>        ExpertRecommendation(</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>            asset_class<span class="op">=</span><span class="st">&quot;bonds&quot;</span>,</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>            symbol<span class="op">=</span><span class="st">&quot;SHY&quot;</span>,</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>            action<span class="op">=</span>Action.BUY_25,</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>            confidence<span class="op">=</span><span class="fl">0.65</span>,</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>            target_weight<span class="op">=</span><span class="fl">0.05</span>,</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>            reasoning<span class="op">=</span><span class="st">&quot;Short duration safer in rising rate environment&quot;</span>,</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>            market_view<span class="op">=</span>{<span class="st">&quot;rate_view&quot;</span>: <span class="st">&quot;hawkish&quot;</span>, <span class="st">&quot;duration_preference&quot;</span>: <span class="st">&quot;short&quot;</span>},</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>            risk_assessment<span class="op">=</span>{<span class="st">&quot;duration_risk&quot;</span>: <span class="fl">0.08</span>, <span class="st">&quot;credit_risk&quot;</span>: <span class="fl">0.02</span>},</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>    overall_view<span class="op">=</span><span class="st">&quot;bearish&quot;</span>,</span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>    sector_allocation<span class="op">=</span>{<span class="st">&quot;TLT&quot;</span>: <span class="op">-</span><span class="fl">0.40</span>, <span class="st">&quot;SHY&quot;</span>: <span class="fl">0.35</span>, <span class="st">&quot;IEF&quot;</span>: <span class="fl">0.25</span>},</span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>    key_factors<span class="op">=</span>[<span class="st">&quot;Fed hawkish stance&quot;</span>, <span class="st">&quot;Inverted yield curve&quot;</span>, <span class="st">&quot;Rising long-term rates&quot;</span>],</span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<hr />
+<h3 id="commodityexpert-商品专家">1.3 CommodityExpert (商品专家)</h3>
+<p><strong>输入:</strong></p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>market_data: Dict[<span class="bu">str</span>, Any]</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;GLD&quot;</span>: {<span class="st">&quot;close&quot;</span>: <span class="fl">185.50</span>, <span class="st">&quot;change_pct&quot;</span>: <span class="fl">0.65</span>, <span class="st">&quot;volume&quot;</span>: <span class="dv">12000000</span>},</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;SLV&quot;</span>: {<span class="st">&quot;close&quot;</span>: <span class="fl">21.80</span>, <span class="st">&quot;change_pct&quot;</span>: <span class="fl">0.92</span>, <span class="st">&quot;volume&quot;</span>: <span class="dv">8000000</span>},</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;USO&quot;</span>: {<span class="st">&quot;close&quot;</span>: <span class="fl">72.30</span>, <span class="st">&quot;change_pct&quot;</span>: <span class="op">-</span><span class="fl">1.25</span>, <span class="st">&quot;volume&quot;</span>: <span class="dv">8500000</span>},</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;commodities&quot;</span>: {</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;gold_spot&quot;</span>: <span class="fl">1985.50</span>,</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;silver_spot&quot;</span>: <span class="fl">23.45</span>,</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;crude_wti&quot;</span>: <span class="fl">82.50</span>,</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;natural_gas&quot;</span>: <span class="fl">2.85</span>,</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;copper&quot;</span>: <span class="fl">3.75</span>,</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>news_data: List[Dict]</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>[</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    {<span class="st">&quot;title&quot;</span>: <span class="st">&quot;OPEC+ considers production cuts&quot;</span>, <span class="st">&quot;sentiment&quot;</span>: <span class="st">&quot;positive&quot;</span>, <span class="st">&quot;symbols&quot;</span>: [<span class="st">&quot;USO&quot;</span>]},</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    {<span class="st">&quot;title&quot;</span>: <span class="st">&quot;Gold rises on safe-haven demand&quot;</span>, <span class="st">&quot;sentiment&quot;</span>: <span class="st">&quot;positive&quot;</span>, <span class="st">&quot;symbols&quot;</span>: [<span class="st">&quot;GLD&quot;</span>]},</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>macro_data: Dict[<span class="bu">str</span>, Any]</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;dollar_index&quot;</span>: <span class="fl">105.5</span>,</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;inflation_expectation&quot;</span>: <span class="fl">2.8</span>,</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;real_rates&quot;</span>: <span class="fl">1.5</span>,</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p><strong>输出:</strong></p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>ExpertReport(</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    expert_name<span class="op">=</span><span class="st">&quot;Commodity Expert&quot;</span>,</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    asset_class<span class="op">=</span><span class="st">&quot;commodities&quot;</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    timestamp<span class="op">=</span><span class="st">&quot;2024-10-15T14:30:00&quot;</span>,</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    recommendations<span class="op">=</span>[</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>        ExpertRecommendation(</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>            asset_class<span class="op">=</span><span class="st">&quot;commodities&quot;</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>            symbol<span class="op">=</span><span class="st">&quot;GLD&quot;</span>,</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>            action<span class="op">=</span>Action.BUY_50,</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>            confidence<span class="op">=</span><span class="fl">0.72</span>,</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>            target_weight<span class="op">=</span><span class="fl">0.08</span>,</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>            reasoning<span class="op">=</span><span class="st">&quot;Safe haven demand amid market uncertainty&quot;</span>,</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>            market_view<span class="op">=</span>{<span class="st">&quot;gold_view&quot;</span>: <span class="st">&quot;bullish&quot;</span>, <span class="st">&quot;dollar_impact&quot;</span>: <span class="st">&quot;neutral&quot;</span>},</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>            risk_assessment<span class="op">=</span>{<span class="st">&quot;volatility_risk&quot;</span>: <span class="fl">0.12</span>, <span class="st">&quot;currency_risk&quot;</span>: <span class="fl">0.08</span>},</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>        ExpertRecommendation(</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>            asset_class<span class="op">=</span><span class="st">&quot;commodities&quot;</span>,</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>            symbol<span class="op">=</span><span class="st">&quot;USO&quot;</span>,</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>            action<span class="op">=</span>Action.SHORT_25,  <span class="co"># V2: 做空原油</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>            confidence<span class="op">=</span><span class="fl">0.55</span>,</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>            target_weight<span class="op">=-</span><span class="fl">0.03</span>,    <span class="co"># 负权重</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>            reasoning<span class="op">=</span><span class="st">&quot;Demand concerns outweigh OPEC cuts&quot;</span>,</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>            market_view<span class="op">=</span>{<span class="st">&quot;oil_view&quot;</span>: <span class="st">&quot;bearish&quot;</span>, <span class="st">&quot;supply_demand&quot;</span>: <span class="st">&quot;oversupply&quot;</span>},</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>            risk_assessment<span class="op">=</span>{<span class="st">&quot;volatility_risk&quot;</span>: <span class="fl">0.25</span>, <span class="st">&quot;geopolitical_risk&quot;</span>: <span class="fl">0.30</span>},</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>    overall_view<span class="op">=</span><span class="st">&quot;neutral&quot;</span>,</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>    sector_allocation<span class="op">=</span>{<span class="st">&quot;GLD&quot;</span>: <span class="fl">0.50</span>, <span class="st">&quot;SLV&quot;</span>: <span class="fl">0.20</span>, <span class="st">&quot;USO&quot;</span>: <span class="op">-</span><span class="fl">0.15</span>, <span class="st">&quot;DBA&quot;</span>: <span class="fl">0.15</span>},</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>    key_factors<span class="op">=</span>[<span class="st">&quot;Dollar strength&quot;</span>, <span class="st">&quot;Safe haven flows&quot;</span>, <span class="st">&quot;Oil demand uncertainty&quot;</span>],</span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<hr />
+<h3 id="reitsexpert-房地产信托专家">1.4 REITsExpert (房地产信托专家)</h3>
+<p><strong>输入:</strong></p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>market_data: Dict[<span class="bu">str</span>, Any]</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;VNQ&quot;</span>: {<span class="st">&quot;close&quot;</span>: <span class="fl">82.50</span>, <span class="st">&quot;change_pct&quot;</span>: <span class="op">-</span><span class="fl">0.95</span>, <span class="st">&quot;dividend_yield&quot;</span>: <span class="fl">4.25</span>},</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;DLR&quot;</span>: {<span class="st">&quot;close&quot;</span>: <span class="fl">125.80</span>, <span class="st">&quot;change_pct&quot;</span>: <span class="fl">0.45</span>, <span class="st">&quot;dividend_yield&quot;</span>: <span class="fl">3.85</span>, <span class="st">&quot;sector&quot;</span>: <span class="st">&quot;data_center&quot;</span>},</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;EQIX&quot;</span>: {<span class="st">&quot;close&quot;</span>: <span class="fl">780.50</span>, <span class="st">&quot;change_pct&quot;</span>: <span class="fl">0.62</span>, <span class="st">&quot;dividend_yield&quot;</span>: <span class="fl">2.10</span>, <span class="st">&quot;sector&quot;</span>: <span class="st">&quot;data_center&quot;</span>},</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;rates&quot;</span>: {</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;mortgage_30y&quot;</span>: <span class="fl">7.25</span>,</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;treasury_10y&quot;</span>: <span class="fl">4.65</span>,</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>news_data: List[Dict]</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>[</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>    {<span class="st">&quot;title&quot;</span>: <span class="st">&quot;Office vacancy rates hit record high&quot;</span>, <span class="st">&quot;sentiment&quot;</span>: <span class="st">&quot;negative&quot;</span>, <span class="st">&quot;sector&quot;</span>: <span class="st">&quot;office&quot;</span>},</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>    {<span class="st">&quot;title&quot;</span>: <span class="st">&quot;Data center demand surges on AI boom&quot;</span>, <span class="st">&quot;sentiment&quot;</span>: <span class="st">&quot;positive&quot;</span>, <span class="st">&quot;sector&quot;</span>: <span class="st">&quot;data_center&quot;</span>},</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>]</span></code></pre></div>
+<p><strong>输出:</strong></p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>ExpertReport(</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    expert_name<span class="op">=</span><span class="st">&quot;REITs Expert&quot;</span>,</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    asset_class<span class="op">=</span><span class="st">&quot;reits&quot;</span>,</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    timestamp<span class="op">=</span><span class="st">&quot;2024-10-15T14:30:00&quot;</span>,</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    recommendations<span class="op">=</span>[</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>        ExpertRecommendation(</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>            asset_class<span class="op">=</span><span class="st">&quot;reits&quot;</span>,</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>            symbol<span class="op">=</span><span class="st">&quot;VNQ&quot;</span>,</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>            action<span class="op">=</span>Action.SHORT_25,  <span class="co"># V2: 做空广泛REITs</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>            confidence<span class="op">=</span><span class="fl">0.60</span>,</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>            target_weight<span class="op">=-</span><span class="fl">0.03</span>,</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>            reasoning<span class="op">=</span><span class="st">&quot;Rising rates and office vacancy concerns&quot;</span>,</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>            market_view<span class="op">=</span>{<span class="st">&quot;sector_view&quot;</span>: <span class="st">&quot;bearish&quot;</span>, <span class="st">&quot;rate_sensitivity&quot;</span>: <span class="st">&quot;high&quot;</span>},</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>            risk_assessment<span class="op">=</span>{<span class="st">&quot;rate_risk&quot;</span>: <span class="fl">0.35</span>, <span class="st">&quot;vacancy_risk&quot;</span>: <span class="fl">0.25</span>},</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>        ExpertRecommendation(</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>            asset_class<span class="op">=</span><span class="st">&quot;reits&quot;</span>,</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>            symbol<span class="op">=</span><span class="st">&quot;DLR&quot;</span>,</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>            action<span class="op">=</span>Action.BUY_50,</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>            confidence<span class="op">=</span><span class="fl">0.75</span>,</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>            target_weight<span class="op">=</span><span class="fl">0.05</span>,</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>            reasoning<span class="op">=</span><span class="st">&quot;Data center demand driven by AI infrastructure&quot;</span>,</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>            market_view<span class="op">=</span>{<span class="st">&quot;sector_view&quot;</span>: <span class="st">&quot;bullish&quot;</span>, <span class="st">&quot;growth_driver&quot;</span>: <span class="st">&quot;AI/cloud&quot;</span>},</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>            risk_assessment<span class="op">=</span>{<span class="st">&quot;rate_risk&quot;</span>: <span class="fl">0.20</span>, <span class="st">&quot;tech_dependency&quot;</span>: <span class="fl">0.15</span>},</span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>    overall_view<span class="op">=</span><span class="st">&quot;neutral&quot;</span>,</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>    sector_allocation<span class="op">=</span>{<span class="st">&quot;DLR&quot;</span>: <span class="fl">0.45</span>, <span class="st">&quot;EQIX&quot;</span>: <span class="fl">0.35</span>, <span class="st">&quot;VNQ&quot;</span>: <span class="op">-</span><span class="fl">0.10</span>, <span class="st">&quot;IYR&quot;</span>: <span class="op">-</span><span class="fl">0.10</span>},</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>    key_factors<span class="op">=</span>[<span class="st">&quot;High interest rates&quot;</span>, <span class="st">&quot;Office sector weakness&quot;</span>, <span class="st">&quot;Data center strength&quot;</span>],</span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<hr />
+<h3 id="cryptoexpert-加密货币专家">1.5 CryptoExpert (加密货币专家)</h3>
+<p><strong>输入:</strong></p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>market_data: Dict[<span class="bu">str</span>, Any]</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;BTC-USD&quot;</span>: {</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;close&quot;</span>: <span class="fl">42500.00</span>,</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;change_pct&quot;</span>: <span class="fl">2.35</span>,</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;volume_24h&quot;</span>: <span class="dv">28000000000</span>,</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;market_cap&quot;</span>: <span class="dv">830000000000</span>,</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;dominance&quot;</span>: <span class="fl">52.5</span>,</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;ETH-USD&quot;</span>: {</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;close&quot;</span>: <span class="fl">2250.00</span>,</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;change_pct&quot;</span>: <span class="fl">3.15</span>,</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;volume_24h&quot;</span>: <span class="dv">15000000000</span>,</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;gas_price&quot;</span>: <span class="dv">25</span>,</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;market_metrics&quot;</span>: {</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;total_market_cap&quot;</span>: <span class="dv">1580000000000</span>,</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;fear_greed_index&quot;</span>: <span class="dv">65</span>,</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;btc_dominance&quot;</span>: <span class="fl">52.5</span>,</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>news_data: List[Dict]</span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>[</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>    {<span class="st">&quot;title&quot;</span>: <span class="st">&quot;Bitcoin ETF approval speculation intensifies&quot;</span>, <span class="st">&quot;sentiment&quot;</span>: <span class="st">&quot;positive&quot;</span>},</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>    {<span class="st">&quot;title&quot;</span>: <span class="st">&quot;Ethereum Shanghai upgrade successful&quot;</span>, <span class="st">&quot;sentiment&quot;</span>: <span class="st">&quot;positive&quot;</span>},</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>on_chain_data: Optional[Dict]  <span class="co"># 可选</span></span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;btc_exchange_netflow&quot;</span>: <span class="op">-</span><span class="dv">15000</span>,  <span class="co"># 负数=流出交易所</span></span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;eth_staking_ratio&quot;</span>: <span class="fl">0.22</span>,</span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;whale_activity&quot;</span>: <span class="st">&quot;accumulating&quot;</span>,</span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p><strong>输出:</strong></p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>ExpertReport(</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    expert_name<span class="op">=</span><span class="st">&quot;Crypto Expert&quot;</span>,</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    asset_class<span class="op">=</span><span class="st">&quot;crypto&quot;</span>,</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    timestamp<span class="op">=</span><span class="st">&quot;2024-10-15T14:30:00&quot;</span>,</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    recommendations<span class="op">=</span>[</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>        ExpertRecommendation(</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>            asset_class<span class="op">=</span><span class="st">&quot;crypto&quot;</span>,</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>            symbol<span class="op">=</span><span class="st">&quot;BTC-USD&quot;</span>,</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>            action<span class="op">=</span>Action.BUY_75,</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>            confidence<span class="op">=</span><span class="fl">0.70</span>,</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>            target_weight<span class="op">=</span><span class="fl">0.04</span>,</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>            reasoning<span class="op">=</span><span class="st">&quot;ETF approval momentum, exchange outflows bullish&quot;</span>,</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>            market_view<span class="op">=</span>{<span class="st">&quot;trend&quot;</span>: <span class="st">&quot;bullish&quot;</span>, <span class="st">&quot;catalyst&quot;</span>: <span class="st">&quot;ETF_approval&quot;</span>, <span class="st">&quot;on_chain&quot;</span>: <span class="st">&quot;accumulation&quot;</span>},</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>            risk_assessment<span class="op">=</span>{<span class="st">&quot;volatility_risk&quot;</span>: <span class="fl">0.45</span>, <span class="st">&quot;regulatory_risk&quot;</span>: <span class="fl">0.25</span>},</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>        ExpertRecommendation(</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>            asset_class<span class="op">=</span><span class="st">&quot;crypto&quot;</span>,</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>            symbol<span class="op">=</span><span class="st">&quot;ETH-USD&quot;</span>,</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>            action<span class="op">=</span>Action.BUY_50,</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>            confidence<span class="op">=</span><span class="fl">0.65</span>,</span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>            target_weight<span class="op">=</span><span class="fl">0.03</span>,</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>            reasoning<span class="op">=</span><span class="st">&quot;Network upgrade success, growing staking&quot;</span>,</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>            market_view<span class="op">=</span>{<span class="st">&quot;trend&quot;</span>: <span class="st">&quot;bullish&quot;</span>, <span class="st">&quot;network_health&quot;</span>: <span class="st">&quot;strong&quot;</span>},</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>            risk_assessment<span class="op">=</span>{<span class="st">&quot;volatility_risk&quot;</span>: <span class="fl">0.50</span>, <span class="st">&quot;smart_contract_risk&quot;</span>: <span class="fl">0.15</span>},</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>    overall_view<span class="op">=</span><span class="st">&quot;bullish&quot;</span>,</span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a>    sector_allocation<span class="op">=</span>{<span class="st">&quot;BTC-USD&quot;</span>: <span class="fl">0.60</span>, <span class="st">&quot;ETH-USD&quot;</span>: <span class="fl">0.40</span>},</span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a>    key_factors<span class="op">=</span>[<span class="st">&quot;Bitcoin ETF catalyst&quot;</span>, <span class="st">&quot;Institutional accumulation&quot;</span>, <span class="st">&quot;Network upgrades&quot;</span>],</span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<hr />
+<h2 id="portfolio-manager-组合管理器">2. Portfolio Manager (组合管理器)</h2>
+<p><strong>输入:</strong></p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>expert_reports: Dict[<span class="bu">str</span>, ExpertReport]</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;stocks&quot;</span>: ExpertReport(...),   <span class="co"># 来自 StockExpert</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;bonds&quot;</span>: ExpertReport(...),    <span class="co"># 来自 BondExpert</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;commodities&quot;</span>: ExpertReport(...),</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;reits&quot;</span>: ExpertReport(...),</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;crypto&quot;</span>: ExpertReport(...),</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>portfolio_state: PortfolioState</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="co"># 当前组合状态 (详见第4节)</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>risk_constraints: Dict</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;max_single_asset&quot;</span>: <span class="fl">0.15</span>,</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;max_asset_class&quot;</span>: <span class="fl">0.50</span>,</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;max_short_exposure&quot;</span>: <span class="fl">0.30</span>,  <span class="co"># V2新增: 最大做空敞口</span></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;target_volatility&quot;</span>: <span class="fl">0.12</span>,</span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;max_drawdown&quot;</span>: <span class="fl">0.15</span>,</span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>allocation_bounds: Dict[<span class="bu">str</span>, Dict]</span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;stocks&quot;</span>: {<span class="st">&quot;min&quot;</span>: <span class="fl">0.30</span>, <span class="st">&quot;max&quot;</span>: <span class="fl">0.50</span>},</span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;bonds&quot;</span>: {<span class="st">&quot;min&quot;</span>: <span class="op">-</span><span class="fl">0.20</span>, <span class="st">&quot;max&quot;</span>: <span class="fl">0.35</span>},  <span class="co"># V2: min可为负数</span></span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;commodities&quot;</span>: {<span class="st">&quot;min&quot;</span>: <span class="op">-</span><span class="fl">0.10</span>, <span class="st">&quot;max&quot;</span>: <span class="fl">0.25</span>},</span>
+<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;reits&quot;</span>: {<span class="st">&quot;min&quot;</span>: <span class="op">-</span><span class="fl">0.05</span>, <span class="st">&quot;max&quot;</span>: <span class="fl">0.15</span>},</span>
+<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;crypto&quot;</span>: {<span class="st">&quot;min&quot;</span>: <span class="fl">0.00</span>, <span class="st">&quot;max&quot;</span>: <span class="fl">0.10</span>},</span>
+<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;cash&quot;</span>: {<span class="st">&quot;min&quot;</span>: <span class="fl">0.05</span>, <span class="st">&quot;max&quot;</span>: <span class="fl">0.20</span>},</span>
+<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p><strong>输出:</strong></p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>target_allocation: Dict[<span class="bu">str</span>, <span class="bu">float</span>]</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例 (V2: 负权重表示做空):</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;SPY&quot;</span>: <span class="fl">0.12</span>,</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;QQQ&quot;</span>: <span class="fl">0.10</span>,</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;NVDA&quot;</span>: <span class="fl">0.08</span>,</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;AAPL&quot;</span>: <span class="fl">0.06</span>,</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;TLT&quot;</span>: <span class="op">-</span><span class="fl">0.08</span>,   <span class="co"># 做空</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;IEF&quot;</span>: <span class="op">-</span><span class="fl">0.04</span>,   <span class="co"># 做空</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;SHY&quot;</span>: <span class="fl">0.05</span>,</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;GLD&quot;</span>: <span class="fl">0.08</span>,</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;USO&quot;</span>: <span class="op">-</span><span class="fl">0.03</span>,   <span class="co"># 做空</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;DLR&quot;</span>: <span class="fl">0.05</span>,</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;BTC-USD&quot;</span>: <span class="fl">0.04</span>,</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;ETH-USD&quot;</span>: <span class="fl">0.03</span>,</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;cash&quot;</span>: <span class="fl">0.10</span>,</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>trade_orders: List[TradeOrder]</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>[</span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>    TradeOrder(symbol<span class="op">=</span><span class="st">&quot;TLT&quot;</span>, action<span class="op">=</span><span class="st">&quot;SHORT&quot;</span>, shares<span class="op">=</span><span class="dv">100</span>, target_weight<span class="op">=-</span><span class="fl">0.08</span>),</span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>    TradeOrder(symbol<span class="op">=</span><span class="st">&quot;SPY&quot;</span>, action<span class="op">=</span><span class="st">&quot;BUY&quot;</span>, shares<span class="op">=</span><span class="dv">50</span>, target_weight<span class="op">=</span><span class="fl">0.12</span>),</span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>    TradeOrder(symbol<span class="op">=</span><span class="st">&quot;USO&quot;</span>, action<span class="op">=</span><span class="st">&quot;SHORT&quot;</span>, shares<span class="op">=</span><span class="dv">200</span>, target_weight<span class="op">=-</span><span class="fl">0.03</span>),</span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>optimization_report: Dict</span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;expected_return&quot;</span>: <span class="fl">0.085</span>,</span>
+<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;expected_volatility&quot;</span>: <span class="fl">0.118</span>,</span>
+<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;sharpe_ratio&quot;</span>: <span class="fl">0.72</span>,</span>
+<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;max_drawdown_estimate&quot;</span>: <span class="fl">0.12</span>,</span>
+<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;gross_exposure&quot;</span>: <span class="fl">1.15</span>,   <span class="co"># V2新增: 总敞口</span></span>
+<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;net_exposure&quot;</span>: <span class="fl">0.85</span>,     <span class="co"># V2新增: 净敞口</span></span>
+<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;short_exposure&quot;</span>: <span class="fl">0.15</span>,   <span class="co"># V2新增: 空头敞口</span></span>
+<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<hr />
+<h2 id="risk-controller-风控控制器">3. Risk Controller (风控控制器)</h2>
+<p><strong>输入:</strong></p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>proposed_allocation: Dict[<span class="bu">str</span>, <span class="bu">float</span>]</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 来自 Portfolio Manager 的建议配置 (含负权重)</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;SPY&quot;</span>: <span class="fl">0.15</span>,</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;TLT&quot;</span>: <span class="op">-</span><span class="fl">0.10</span>,  <span class="co"># 做空请求</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;GLD&quot;</span>: <span class="fl">0.08</span>,</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>portfolio_state: PortfolioState</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="co"># 当前组合状态</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>historical_returns: pd.DataFrame</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="co"># 历史收益率数据 (252天)</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>risk_params: Dict</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例 (V2新增做空相关参数):</span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;max_single_asset&quot;</span>: <span class="fl">0.15</span>,</span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;max_asset_class&quot;</span>: <span class="fl">0.50</span>,</span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;max_var_95&quot;</span>: <span class="fl">0.03</span>,</span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;max_drawdown&quot;</span>: <span class="fl">0.15</span>,</span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>    <span class="co"># V2 新增</span></span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;max_short_single&quot;</span>: <span class="fl">0.10</span>,    <span class="co"># 单一做空上限</span></span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;max_total_short&quot;</span>: <span class="fl">0.30</span>,     <span class="co"># 总做空上限</span></span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;margin_requirement&quot;</span>: <span class="fl">0.50</span>,   <span class="co"># 保证金比例</span></span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p><strong>输出:</strong></p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>adjusted_allocation: Dict[<span class="bu">str</span>, <span class="bu">float</span>]</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 风险调整后的配置</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;SPY&quot;</span>: <span class="fl">0.15</span>,      <span class="co"># 保持不变</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;TLT&quot;</span>: <span class="op">-</span><span class="fl">0.08</span>,     <span class="co"># 从-0.10调整到-0.08 (超出单一做空上限)</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;GLD&quot;</span>: <span class="fl">0.08</span>,      <span class="co"># 保持不变</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>risk_report: Dict</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;checks_passed&quot;</span>: <span class="va">True</span>,</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;violations&quot;</span>: [],</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;warnings&quot;</span>: [</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>        {</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;type&quot;</span>: <span class="st">&quot;SHORT_CONCENTRATION&quot;</span>,</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;message&quot;</span>: <span class="st">&quot;TLT short reduced from 10% to 8%&quot;</span>,</span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;original&quot;</span>: <span class="op">-</span><span class="fl">0.10</span>,</span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;adjusted&quot;</span>: <span class="op">-</span><span class="fl">0.08</span>,</span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;risk_metrics&quot;</span>: {</span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;portfolio_var_95&quot;</span>: <span class="fl">0.025</span>,</span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;expected_shortfall&quot;</span>: <span class="fl">0.032</span>,</span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;gross_exposure&quot;</span>: <span class="fl">1.12</span>,</span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;net_exposure&quot;</span>: <span class="fl">0.88</span>,</span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;short_exposure&quot;</span>: <span class="fl">0.12</span>,</span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;margin_utilization&quot;</span>: <span class="fl">0.24</span>,  <span class="co"># V2新增</span></span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;diversification_score&quot;</span>: <span class="fl">0.85</span>,</span>
+<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a>    <span class="co"># V2新增: 做空风险检查</span></span>
+<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;short_checks&quot;</span>: {</span>
+<span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;single_short_ok&quot;</span>: <span class="va">True</span>,      <span class="co"># 单一做空 &lt;= 10%</span></span>
+<span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;total_short_ok&quot;</span>: <span class="va">True</span>,       <span class="co"># 总做空 &lt;= 30%</span></span>
+<span id="cb14-36"><a href="#cb14-36" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;margin_ok&quot;</span>: <span class="va">True</span>,            <span class="co"># 保证金充足</span></span>
+<span id="cb14-37"><a href="#cb14-37" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;borrow_available&quot;</span>: <span class="va">True</span>,     <span class="co"># 可借券</span></span>
+<span id="cb14-38"><a href="#cb14-38" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;short_squeeze_risk&quot;</span>: <span class="st">&quot;low&quot;</span>,  <span class="co"># 逼空风险</span></span>
+<span id="cb14-39"><a href="#cb14-39" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb14-40"><a href="#cb14-40" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;stress_tests&quot;</span>: {</span>
+<span id="cb14-41"><a href="#cb14-41" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;market_crash_10pct&quot;</span>: <span class="op">-</span><span class="fl">0.065</span>,</span>
+<span id="cb14-42"><a href="#cb14-42" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;rate_spike_100bps&quot;</span>: <span class="fl">0.015</span>,   <span class="co"># V2: 做空债券获利</span></span>
+<span id="cb14-43"><a href="#cb14-43" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;volatility_spike&quot;</span>: <span class="op">-</span><span class="fl">0.042</span>,</span>
+<span id="cb14-44"><a href="#cb14-44" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb14-45"><a href="#cb14-45" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<hr />
+<h2 id="trading-environment-交易环境">4. Trading Environment (交易环境)</h2>
+<h3 id="multiassetenv">4.1 MultiAssetEnv</h3>
+<p><strong>输入:</strong></p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>config: FinSageConfig</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 系统配置</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>market_data_stream: Dict</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="co"># 每日市场数据</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;date&quot;</span>: <span class="st">&quot;2024-10-15&quot;</span>,</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;prices&quot;</span>: {</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;SPY&quot;</span>: <span class="fl">450.25</span>,</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;TLT&quot;</span>: <span class="fl">92.45</span>,</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;GLD&quot;</span>: <span class="fl">185.50</span>,</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;volumes&quot;</span>: {...},</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;news&quot;</span>: [...],</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>expert_weights: Dict</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a><span class="co"># 专家权重建议</span></span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;SPY&quot;</span>: {<span class="st">&quot;action&quot;</span>: <span class="st">&quot;BUY_50%&quot;</span>, <span class="st">&quot;confidence&quot;</span>: <span class="fl">0.75</span>},</span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;TLT&quot;</span>: {<span class="st">&quot;action&quot;</span>: <span class="st">&quot;SHORT_50%&quot;</span>, <span class="st">&quot;confidence&quot;</span>: <span class="fl">0.70</span>},  <span class="co"># V2</span></span>
+<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;GLD&quot;</span>: {<span class="st">&quot;action&quot;</span>: <span class="st">&quot;BUY_25%&quot;</span>, <span class="st">&quot;confidence&quot;</span>: <span class="fl">0.65</span>},</span>
+<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p><strong>step() 输出:</strong></p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>observation: Dict</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 新的市场状态</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>reward: <span class="bu">float</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="co"># 当日收益</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>done: <span class="bu">bool</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="co"># 是否结束</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>info: Dict</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例:</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;date&quot;</span>: <span class="st">&quot;2024-10-15&quot;</span>,</span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;portfolio_value&quot;</span>: <span class="fl">1005230.50</span>,</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;daily_return&quot;</span>: <span class="fl">0.0052</span>,</span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;trades_executed&quot;</span>: [</span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>        {<span class="st">&quot;symbol&quot;</span>: <span class="st">&quot;TLT&quot;</span>, <span class="st">&quot;action&quot;</span>: <span class="st">&quot;SHORT&quot;</span>, <span class="st">&quot;shares&quot;</span>: <span class="dv">100</span>, <span class="st">&quot;price&quot;</span>: <span class="fl">92.45</span>},</span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>        {<span class="st">&quot;symbol&quot;</span>: <span class="st">&quot;SPY&quot;</span>, <span class="st">&quot;action&quot;</span>: <span class="st">&quot;BUY&quot;</span>, <span class="st">&quot;shares&quot;</span>: <span class="dv">25</span>, <span class="st">&quot;price&quot;</span>: <span class="fl">450.25</span>},</span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;positions&quot;</span>: {</span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;SPY&quot;</span>: {<span class="st">&quot;shares&quot;</span>: <span class="dv">225</span>, <span class="st">&quot;value&quot;</span>: <span class="fl">101306.25</span>, <span class="st">&quot;weight&quot;</span>: <span class="fl">0.101</span>},</span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;TLT&quot;</span>: {<span class="st">&quot;shares&quot;</span>: <span class="op">-</span><span class="dv">100</span>, <span class="st">&quot;value&quot;</span>: <span class="op">-</span><span class="fl">9245.00</span>, <span class="st">&quot;weight&quot;</span>: <span class="op">-</span><span class="fl">0.009</span>},  <span class="co"># V2: 空头</span></span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;GLD&quot;</span>: {<span class="st">&quot;shares&quot;</span>: <span class="dv">150</span>, <span class="st">&quot;value&quot;</span>: <span class="fl">27825.00</span>, <span class="st">&quot;weight&quot;</span>: <span class="fl">0.028</span>},</span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a>    <span class="co"># V2新增</span></span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;short_metrics&quot;</span>: {</span>
+<span id="cb16-27"><a href="#cb16-27" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;short_market_value&quot;</span>: <span class="fl">9245.00</span>,</span>
+<span id="cb16-28"><a href="#cb16-28" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;margin_used&quot;</span>: <span class="fl">4622.50</span>,</span>
+<span id="cb16-29"><a href="#cb16-29" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;borrowing_cost_daily&quot;</span>: <span class="fl">0.51</span>,</span>
+<span id="cb16-30"><a href="#cb16-30" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb16-31"><a href="#cb16-31" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<hr />
+<h3 id="portfoliostate">4.2 PortfolioState</h3>
+<p><strong>Position 结构:</strong></p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Position:</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    symbol: <span class="bu">str</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    shares: <span class="bu">float</span>           <span class="co"># V2关键: 正数=多头, 负数=空头</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    avg_cost: <span class="bu">float</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    current_price: <span class="bu">float</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    asset_class: <span class="bu">str</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>    <span class="co"># V2新增属性</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">@property</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> is_short(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">bool</span>:</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.shares <span class="op">&lt;</span> <span class="dv">0</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">@property</span></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> market_value(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.shares <span class="op">*</span> <span class="va">self</span>.current_price  <span class="co"># 空头为负</span></span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">@property</span></span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> unrealized_pnl(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="va">self</span>.is_short:</span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>            <span class="co"># 空头: 价格下跌 = 盈利</span></span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="bu">abs</span>(<span class="va">self</span>.shares) <span class="op">*</span> (<span class="va">self</span>.avg_cost <span class="op">-</span> <span class="va">self</span>.current_price)</span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>:</span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a>            <span class="co"># 多头: 价格上涨 = 盈利</span></span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="va">self</span>.shares <span class="op">*</span> (<span class="va">self</span>.current_price <span class="op">-</span> <span class="va">self</span>.avg_cost)</span>
+<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">@property</span></span>
+<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> margin_requirement(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="va">self</span>.is_short:</span>
+<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="bu">abs</span>(<span class="va">self</span>.market_value) <span class="op">*</span> <span class="fl">0.5</span>  <span class="co"># 50%保证金</span></span>
+<span id="cb17-31"><a href="#cb17-31" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="fl">0.0</span></span></code></pre></div>
+<p><strong>PortfolioState 结构:</strong></p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> PortfolioState:</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    initial_capital: <span class="bu">float</span> <span class="op">=</span> <span class="fl">1_000_000.0</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    cash: <span class="bu">float</span> <span class="op">=</span> <span class="fl">1_000_000.0</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    positions: Dict[<span class="bu">str</span>, Position] <span class="op">=</span> field(default_factory<span class="op">=</span><span class="bu">dict</span>)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    trade_history: List[Dict] <span class="op">=</span> field(default_factory<span class="op">=</span><span class="bu">list</span>)</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    value_history: List[Dict] <span class="op">=</span> field(default_factory<span class="op">=</span><span class="bu">list</span>)</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    <span class="co"># V2新增</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    short_borrow_rate: <span class="bu">float</span> <span class="op">=</span> <span class="fl">0.02</span>   <span class="co"># 年化借股费率 2%</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    short_margin_ratio: <span class="bu">float</span> <span class="op">=</span> <span class="fl">0.5</span>   <span class="co"># 空头保证金比例 50%</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>    <span class="co"># V2新增属性</span></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">@property</span></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> long_market_value(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>        <span class="co">&quot;&quot;&quot;多头总市值&quot;&quot;&quot;</span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="bu">sum</span>(pos.market_value <span class="cf">for</span> pos <span class="kw">in</span> <span class="va">self</span>.positions.values() <span class="cf">if</span> <span class="kw">not</span> pos.is_short)</span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">@property</span></span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> short_market_value(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>        <span class="co">&quot;&quot;&quot;空头总市值 (负数)&quot;&quot;&quot;</span></span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="bu">sum</span>(pos.market_value <span class="cf">for</span> pos <span class="kw">in</span> <span class="va">self</span>.positions.values() <span class="cf">if</span> pos.is_short)</span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">@property</span></span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> gross_exposure(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>        <span class="co">&quot;&quot;&quot;总敞口 = |多头| + |空头|&quot;&quot;&quot;</span></span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.long_market_value <span class="op">+</span> <span class="bu">abs</span>(<span class="va">self</span>.short_market_value)</span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">@property</span></span>
+<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> net_exposure(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a>        <span class="co">&quot;&quot;&quot;净敞口 = 多头 - |空头|&quot;&quot;&quot;</span></span>
+<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.long_market_value <span class="op">-</span> <span class="bu">abs</span>(<span class="va">self</span>.short_market_value)</span>
+<span id="cb18-33"><a href="#cb18-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-34"><a href="#cb18-34" aria-hidden="true" tabindex="-1"></a>    <span class="at">@property</span></span>
+<span id="cb18-35"><a href="#cb18-35" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> short_margin_required(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="cb18-36"><a href="#cb18-36" aria-hidden="true" tabindex="-1"></a>        <span class="co">&quot;&quot;&quot;空头所需保证金&quot;&quot;&quot;</span></span>
+<span id="cb18-37"><a href="#cb18-37" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="bu">abs</span>(<span class="va">self</span>.short_market_value) <span class="op">*</span> <span class="va">self</span>.short_margin_ratio</span></code></pre></div>
+<hr />
+<h2 id="v2-做空机制">5. V2 做空机制</h2>
+<h3 id="action-枚举-13-action-space">5.1 Action 枚举 (13-Action Space)</h3>
+<div class="sourceCode" id="cb19"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Action(Enum):</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># 做空动作 (V2新增)</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    SHORT_100 <span class="op">=</span> <span class="st">&quot;SHORT_100%&quot;</span>   <span class="co"># multiplier = -1.0</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    SHORT_75 <span class="op">=</span> <span class="st">&quot;SHORT_75%&quot;</span>     <span class="co"># multiplier = -0.75</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    SHORT_50 <span class="op">=</span> <span class="st">&quot;SHORT_50%&quot;</span>     <span class="co"># multiplier = -0.5</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    SHORT_25 <span class="op">=</span> <span class="st">&quot;SHORT_25%&quot;</span>     <span class="co"># multiplier = -0.25</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># 卖出/减持</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>    SELL_100 <span class="op">=</span> <span class="st">&quot;SELL_100%&quot;</span>     <span class="co"># multiplier = 0.0</span></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>    SELL_75 <span class="op">=</span> <span class="st">&quot;SELL_75%&quot;</span>       <span class="co"># multiplier = 0.25</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>    SELL_50 <span class="op">=</span> <span class="st">&quot;SELL_50%&quot;</span>       <span class="co"># multiplier = 0.5</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>    SELL_25 <span class="op">=</span> <span class="st">&quot;SELL_25%&quot;</span>       <span class="co"># multiplier = 0.75</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># 持有</span></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>    HOLD <span class="op">=</span> <span class="st">&quot;HOLD&quot;</span>              <span class="co"># multiplier = 1.0</span></span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>    <span class="co"># 买入/加仓</span></span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>    BUY_25 <span class="op">=</span> <span class="st">&quot;BUY_25%&quot;</span>         <span class="co"># multiplier = 1.25</span></span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>    BUY_50 <span class="op">=</span> <span class="st">&quot;BUY_50%&quot;</span>         <span class="co"># multiplier = 1.5</span></span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>    BUY_75 <span class="op">=</span> <span class="st">&quot;BUY_75%&quot;</span>         <span class="co"># multiplier = 1.75</span></span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>    BUY_100 <span class="op">=</span> <span class="st">&quot;BUY_100%&quot;</span>       <span class="co"># multiplier = 2.0</span></span></code></pre></div>
+<h3 id="做空交易类型">5.2 做空交易类型</h3>
+<table>
+<thead>
+<tr class="header">
+<th>交易类型</th>
+<th>触发条件</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>SHORT</code></td>
+<td>shares &lt; 0, 无现有仓位</td>
+<td>开新空仓</td>
+</tr>
+<tr class="even">
+<td><code>ADD_SHORT</code></td>
+<td>shares &lt; 0, 有空头仓位</td>
+<td>加空仓</td>
+</tr>
+<tr class="odd">
+<td><code>COVER_SHORT</code></td>
+<td>shares &gt; 0, 有空头仓位</td>
+<td>平空仓</td>
+</tr>
+<tr class="even">
+<td><code>SELL_AND_SHORT</code></td>
+<td>shares &lt; 0, 有多头仓位, is_short=True</td>
+<td>先卖后空</td>
+</tr>
+<tr class="odd">
+<td><code>COVER_AND_BUY</code></td>
+<td>shares &gt; 平空所需, 有空头仓位</td>
+<td>先平空后做多</td>
+</tr>
+</tbody>
+</table>
+<h3 id="空头盈亏计算">5.3 空头盈亏计算</h3>
+<pre><code>多头 PnL = shares × (current_price - avg_cost)
+         价格上涨 → 盈利
+
+空头 PnL = |shares| × (avg_cost - current_price)
+         价格下跌 → 盈利</code></pre>
+<h3 id="保证金和借股成本">5.4 保证金和借股成本</h3>
+<table>
+<thead>
+<tr class="header">
+<th>项目</th>
+<th>数值</th>
+<th>公式</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>保证金比例</td>
+<td>50%</td>
+<td><code>margin = |short_value| × 0.5</code></td>
+</tr>
+<tr class="even">
+<td>借股费率</td>
+<td>2% 年化</td>
+<td><code>daily_cost = |short_value| × 0.02 / 365</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="完整系统架构图">6. 完整系统架构图</h2>
+<h3 id="系统总览">6.1 系统总览</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                              FinSage V2 Multi-Agent System                              │
+│                                  (支持做空的多资产配置系统)                                │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                                    DATA LAYER (数据层)                                   │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐   │
+│  │   FMP API   │  │  Yahoo Fin  │  │  News API   │  │ Technical   │  │   Macro     │   │
+│  │  (Prices)   │  │  (Backup)   │  │ (Sentiment) │  │ Indicators  │  │   Data      │   │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘   │
+│         │                │                │                │                │          │
+│         └────────────────┴────────────────┴────────────────┴────────────────┘          │
+│                                           │                                             │
+│                              ┌────────────▼────────────┐                               │
+│                              │   DataProvider (统一)    │                               │
+│                              │   market_data, news,    │                               │
+│                              │   technical, macro      │                               │
+│                              └────────────┬────────────┘                               │
+└──────────────────────────────────────────┼──────────────────────────────────────────────┘
+                                           │
+┌──────────────────────────────────────────▼──────────────────────────────────────────────┐
+│                               EXPERT LAYER (专家层)                                      │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                         │
+│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐       │
+│  │  StockExpert    │ │  BondExpert     │ │ CommodityExpert │ │  REITsExpert    │       │
+│  │                 │ │                 │ │                 │ │                 │       │
+│  │ Input:          │ │ Input:          │ │ Input:          │ │ Input:          │       │
+│  │ - prices        │ │ - prices        │ │ - prices        │ │ - prices        │       │
+│  │ - news          │ │ - rates         │ │ - commodities   │ │ - mortgage rate │       │
+│  │ - technicals    │ │ - FOMC news     │ │ - dollar index  │ │ - vacancy news  │       │
+│  │ - VIX           │ │ - inflation     │ │ - geopolitics   │ │ - sector news   │       │
+│  │                 │ │                 │ │                 │ │                 │       │
+│  │ Output:         │ │ Output:         │ │ Output:         │ │ Output:         │       │
+│  │ ExpertReport    │ │ ExpertReport    │ │ ExpertReport    │ │ ExpertReport    │       │
+│  │ - BUY/HOLD/SELL │ │ - BUY/HOLD/SELL │ │ - BUY/HOLD/SELL │ │ - BUY/HOLD/SELL │       │
+│  │ - SHORT (V2)    │ │ - SHORT (V2)    │ │ - SHORT (V2)    │ │ - SHORT (V2)    │       │
+│  └────────┬────────┘ └────────┬────────┘ └────────┬────────┘ └────────┬────────┘       │
+│           │                   │                   │                   │                │
+│           │  ┌────────────────┴────────────────┐  │                   │                │
+│           │  │         CryptoExpert            │  │                   │                │
+│           │  │                                 │  │                   │                │
+│           │  │ Input: prices, on-chain, news   │  │                   │                │
+│           │  │ Output: ExpertReport            │  │                   │                │
+│           │  └────────────────┬────────────────┘  │                   │                │
+│           │                   │                   │                   │                │
+│           └───────────────────┴───────────────────┴───────────────────┘                │
+│                                           │                                             │
+│                              ┌────────────▼────────────┐                               │
+│                              │  5个 ExpertReport 汇总   │                               │
+│                              │  含 recommendations[]   │                               │
+│                              │  含 SHORT 信号 (V2)     │                               │
+│                              └────────────┬────────────┘                               │
+└──────────────────────────────────────────┼──────────────────────────────────────────────┘
+                                           │
+┌──────────────────────────────────────────▼──────────────────────────────────────────────┐
+│                            DECISION LAYER (决策层)                                       │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐   │
+│  │                          Portfolio Manager (组合管理器)                          │   │
+│  ├─────────────────────────────────────────────────────────────────────────────────┤   │
+│  │                                                                                 │   │
+│  │  Input:                              │  Output:                                 │   │
+│  │  ├── expert_reports (5个专家报告)     │  ├── target_allocation                   │   │
+│  │  ├── portfolio_state (当前状态)       │  │   ├── SPY: 0.12                       │   │
+│  │  ├── risk_constraints                │  │   ├── TLT: -0.08  ← V2: 负权重=做空   │   │
+│  │  └── allocation_bounds               │  │   ├── GLD: 0.08                       │   │
+│  │                                      │  │   └── ...                             │   │
+│  │                                      │  ├── trade_orders                        │   │
+│  │  Process:                            │  └── optimization_report                 │   │
+│  │  1. 聚合专家建议                      │      ├── gross_exposure: 1.15            │   │
+│  │  2. 计算 action_multiplier           │      ├── net_exposure: 0.85              │   │
+│  │     SHORT_50% → -0.5                 │      └── short_exposure: 0.15            │   │
+│  │  3. 生成目标权重                      │                                          │   │
+│  │                                      │                                          │   │
+│  └──────────────────────────────────────┴──────────────────────────────────────────┘   │
+│                                           │                                             │
+│                              ┌────────────▼────────────┐                               │
+│                              │   target_allocation     │                               │
+│                              │   (含负权重做空配置)      │                               │
+│                              └────────────┬────────────┘                               │
+│                                           │                                             │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐   │
+│  │                          Risk Controller (风控控制器)                            │   │
+│  ├─────────────────────────────────────────────────────────────────────────────────┤   │
+│  │                                                                                 │   │
+│  │  Input:                              │  Output:                                 │   │
+│  │  ├── proposed_allocation             │  ├── adjusted_allocation                 │   │
+│  │  ├── portfolio_state                 │  │   (风险调整后的配置)                    │   │
+│  │  ├── historical_returns              │  │                                       │   │
+│  │  └── risk_params                     │  └── risk_report                         │   │
+│  │      ├── max_single_asset: 0.15      │      ├── checks_passed                   │   │
+│  │      ├── max_short_single: 0.10 (V2) │      ├── violations                      │   │
+│  │      ├── max_total_short: 0.30 (V2)  │      ├── risk_metrics                    │   │
+│  │      └── margin_requirement: 0.50    │      │   ├── VaR_95                       │   │
+│  │                                      │      │   ├── margin_utilization          │   │
+│  │  Checks:                             │      │   └── short_exposure               │   │
+│  │  ├── 单一资产上限检查                 │      └── short_checks (V2)               │   │
+│  │  ├── 单一做空上限检查 (V2)            │          ├── single_short_ok             │   │
+│  │  ├── 总做空敞口检查 (V2)              │          ├── total_short_ok              │   │
+│  │  ├── 保证金充足检查 (V2)              │          └── margin_ok                   │   │
+│  │  └── VaR限制检查                     │                                          │   │
+│  │                                      │                                          │   │
+│  └──────────────────────────────────────┴──────────────────────────────────────────┘   │
+│                                           │                                             │
+│                              ┌────────────▼────────────┐                               │
+│                              │  adjusted_allocation    │                               │
+│                              │  (风险调整后的最终配置)   │                               │
+│                              └────────────┬────────────┘                               │
+└──────────────────────────────────────────┼──────────────────────────────────────────────┘
+                                           │
+┌──────────────────────────────────────────▼──────────────────────────────────────────────┐
+│                            EXECUTION LAYER (执行层)                                      │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐   │
+│  │                           MultiAssetEnv (交易环境)                               │   │
+│  ├─────────────────────────────────────────────────────────────────────────────────┤   │
+│  │                                                                                 │   │
+│  │  Input:                              │  step() Output:                          │   │
+│  │  ├── config                          │  ├── observation (新市场状态)             │   │
+│  │  ├── market_data_stream              │  ├── reward (当日收益)                   │   │
+│  │  └── adjusted_allocation             │  ├── done (是否结束)                     │   │
+│  │                                      │  └── info                                │   │
+│  │                                      │      ├── portfolio_value                 │   │
+│  │  _rebalance():                       │      ├── trades_executed                 │   │
+│  │  ├── 计算目标股数                     │      ├── positions                       │   │
+│  │  ├── 检测做空信号 (target &lt; 0)        │      └── short_metrics (V2)             │   │
+│  │  ├── 执行 BUY/SELL/SHORT             │          ├── short_market_value          │   │
+│  │  └── 记录交易                         │          ├── margin_used                 │   │
+│  │                                      │          └── borrowing_cost_daily        │   │
+│  └──────────────────────────────────────┴──────────────────────────────────────────┘   │
+│                                           │                                             │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐   │
+│  │                           PortfolioState (组合状态)                              │   │
+│  ├─────────────────────────────────────────────────────────────────────────────────┤   │
+│  │                                                                                 │   │
+│  │  ┌─────────────────────────────────────────────────────────────────────────┐   │   │
+│  │  │                         Position (持仓)                                  │   │   │
+│  │  ├─────────────────────────────────────────────────────────────────────────┤   │   │
+│  │  │  symbol: str        shares: float (正=多头, 负=空头)                     │   │   │
+│  │  │  avg_cost: float    current_price: float    asset_class: str            │   │   │
+│  │  │                                                                         │   │   │
+│  │  │  V2 属性:                                                                │   │   │
+│  │  │  ├── is_short → shares &lt; 0                                              │   │   │
+│  │  │  ├── market_value → shares × price (空头为负)                            │   │   │
+│  │  │  ├── unrealized_pnl → 多头: (price-cost)×shares                         │   │   │
+│  │  │  │                    空头: (cost-price)×|shares| ← 价格跌=盈利          │   │   │
+│  │  │  └── margin_requirement → |market_value| × 0.5 (仅空头)                  │   │   │
+│  │  └─────────────────────────────────────────────────────────────────────────┘   │   │
+│  │                                                                                 │   │
+│  │  State:                              │  V2 新增属性:                            │   │
+│  │  ├── cash                            │  ├── long_market_value (多头市值)        │   │
+│  │  ├── positions: Dict[str, Position]  │  ├── short_market_value (空头市值,负)    │   │
+│  │  ├── trade_history                   │  ├── gross_exposure (总敞口)             │   │
+│  │  ├── value_history                   │  ├── net_exposure (净敞口)               │   │
+│  │  ├── short_borrow_rate: 0.02 (V2)    │  └── short_margin_required              │   │
+│  │  └── short_margin_ratio: 0.5 (V2)    │                                          │   │
+│  │                                      │                                          │   │
+│  │  execute_trade() 交易类型:                                                      │   │
+│  │  ┌─────────────────────────────────────────────────────────────────────────┐   │   │
+│  │  │  BUY         │ shares &gt; 0, 无空头  │ 买入/加仓多头                       │   │   │
+│  │  │  SELL        │ shares &lt; 0, 有多头  │ 卖出/减仓多头                       │   │   │
+│  │  │  SHORT       │ shares &lt; 0, 无仓位  │ 开新空仓 (V2)                       │   │   │
+│  │  │  ADD_SHORT   │ shares &lt; 0, 有空头  │ 加空仓 (V2)                         │   │   │
+│  │  │  COVER_SHORT │ shares &gt; 0, 有空头  │ 平空仓 (V2)                         │   │   │
+│  │  │  SELL_AND_SHORT │ 卖完多头继续做空 │ 先卖后空 (V2)                        │   │   │
+│  │  │  COVER_AND_BUY  │ 平完空头继续做多 │ 先平空后做多 (V2)                    │   │   │
+│  │  └─────────────────────────────────────────────────────────────────────────┘   │   │
+│  │                                                                                 │   │
+│  └─────────────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                         │
+└─────────────────────────────────────────────────────────────────────────────────────────┘</code></pre>
+<h3 id="v2-做空数据流">6.2 V2 做空数据流</h3>
+<pre><code>                              ┌─────────────────────────────┐
+                              │      BondExpert 分析        │
+                              │  &quot;利率上升，长债承压&quot;         │
+                              └──────────────┬──────────────┘
+                                             │
+                                             ▼
+                              ┌─────────────────────────────┐
+                              │   ExpertRecommendation      │
+                              │   symbol: &quot;TLT&quot;             │
+                              │   action: SHORT_50%         │
+                              │   confidence: 0.70          │
+                              │   target_weight: -0.08      │
+                              └──────────────┬──────────────┘
+                                             │
+                                             ▼
+                              ┌─────────────────────────────┐
+                              │     Portfolio Manager       │
+                              │   action_multiplier = -0.5  │
+                              │   weight = -0.5 × 0.7 × W   │
+                              │   target: TLT = -0.08       │
+                              └──────────────┬──────────────┘
+                                             │
+                                             ▼
+                              ┌─────────────────────────────┐
+                              │      Risk Controller        │
+                              │   检查: -0.08 &lt; -0.10 ✓     │
+                              │   (单一做空上限10%)          │
+                              │   通过! adjusted = -0.08    │
+                              └──────────────┬──────────────┘
+                                             │
+                                             ▼
+                              ┌─────────────────────────────┐
+                              │       MultiAssetEnv         │
+                              │   target_weight &lt; 0         │
+                              │   is_short = True           │
+                              │   shares = 负数             │
+                              └──────────────┬──────────────┘
+                                             │
+                                             ▼
+                              ┌─────────────────────────────┐
+                              │  PortfolioState.execute_trade│
+                              │  action = &quot;SHORT&quot;           │
+                              │  借入TLT → 卖出 → 收现金     │
+                              │  Position(shares=-100)      │
+                              └──────────────┬──────────────┘
+                                             │
+                                             ▼
+                              ┌─────────────────────────────┐
+                              │        持仓状态             │
+                              │  TLT: shares = -100         │
+                              │  avg_cost = $92.45          │
+                              │  is_short = True            │
+                              │  margin_req = $4,622.50     │
+                              └──────────────┬──────────────┘
+                                             │
+                           ┌─────────────────┴─────────────────┐
+                           │                                   │
+                           ▼                                   ▼
+              ┌─────────────────────┐             ┌─────────────────────┐
+              │   价格下跌 $92→$87   │             │   价格上涨 $92→$97   │
+              │                     │             │                     │
+              │   unrealized_pnl    │             │   unrealized_pnl    │
+              │   = 100×(92-87)     │             │   = 100×(92-97)     │
+              │   = +$500 盈利      │             │   = -$500 亏损      │
+              └─────────────────────┘             └─────────────────────┘</code></pre>
+<h3 id="action-space-映射">6.3 13-Action Space 映射</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────────────────────┐
+│                         13-Action Trading Space                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   做空区间 (V2新增)              │  减仓区间           │  加仓区间            │
+│   ◄────────────────────────────│────────────────────│────────────────────► │
+│                                │                    │                      │
+│   -1.0   -0.75   -0.5   -0.25  │ 0.0  0.25 0.5 0.75│ 1.0  1.25 1.5 1.75 2.0│
+│    │       │       │       │   │  │    │    │    │ │  │    │    │    │    │
+│    │       │       │       │   │  │    │    │    │ │  │    │    │    │    │
+│  SHORT  SHORT  SHORT  SHORT │SELL SELL SELL SELL│HOLD BUY  BUY  BUY  BUY │
+│  100%   75%    50%    25%   │100% 75%  50%  25% │     25%  50%  75%  100%│
+│                              │                    │                       │
+│  ◄─────── 负权重 ──────────────│─────── 0 ─────────│────── 正权重 ────────►│
+│                              │                    │                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+权重计算公式:
+  final_weight = base_weight × action_multiplier × confidence
+
+示例:
+  股票类别权重 = 0.40
+  专家建议 TLT: SHORT_50%, confidence = 0.70
+
+  action_multiplier = -0.5
+  final_weight = 0.40 × (-0.5) × 0.70 = -0.14
+
+  → 做空 TLT，目标权重 -14%</code></pre>
+</body>
+</html>
