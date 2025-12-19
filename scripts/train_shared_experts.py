@@ -228,9 +228,15 @@ class SharedExpertPPOTrainer:
         self.value_loss_coef = value_loss_coef
         self.max_grad_norm = max_grad_norm
 
-        # 为每个Expert创建optimizer
+        # 为每个Expert创建optimizer (包含所有9个专家)
+        self.all_experts = [
+            # Asset Experts (5个)
+            "Stock_Expert", "Bond_Expert", "Commodity_Expert", "REITs_Expert", "Crypto_Expert",
+            # Meta-Level Agents (4个)
+            "Portfolio_Manager", "Hedging_Agent", "Position_Sizing_Agent", "Risk_Controller",
+        ]
         self.optimizers = {}
-        for role in ["Stock_Expert", "Bond_Expert", "Commodity_Expert", "REITs_Expert", "Crypto_Expert"]:
+        for role in self.all_experts:
             self.manager.switch_expert(role)
             params = list(self.manager.parameters(role))
             self.optimizers[role] = torch.optim.AdamW(params, lr=lr)
@@ -256,10 +262,11 @@ class SharedExpertPPOTrainer:
         Returns:
             训练统计
         """
-        expert_order = ["Stock_Expert", "Bond_Expert", "Commodity_Expert", "REITs_Expert", "Crypto_Expert"]
+        # 使用实例变量中定义的完整专家列表
+        expert_order = self.all_experts
 
-        total_rewards = {role: 0.0 for role in expert_order}
-        total_correct = {role: 0 for role in expert_order}
+        total_rewards = {role: 0.0 for role in self.all_experts}
+        total_correct = {role: 0 for role in self.all_experts}
         total_loss = 0.0
 
         for scenario in scenarios:
@@ -432,9 +439,13 @@ def main():
             print(f"  Loss: {stats['total_loss']:.4f}")
             print(f"  Speed: {speed:.2f} samples/s")
             print("  Expert Rewards:")
-            for role in ["Stock_Expert", "Bond_Expert", "Commodity_Expert", "REITs_Expert", "Crypto_Expert"]:
-                reward = stats[f"{role}_reward"]
-                acc = stats[f"{role}_accuracy"]
+            all_expert_roles = [
+                "Stock_Expert", "Bond_Expert", "Commodity_Expert", "REITs_Expert", "Crypto_Expert",
+                "Portfolio_Manager", "Hedging_Agent", "Position_Sizing_Agent", "Risk_Controller",
+            ]
+            for role in all_expert_roles:
+                reward = stats.get(f"{role}_reward", 0.0)
+                acc = stats.get(f"{role}_accuracy", 0.0)
                 print(f"    {role}: reward={reward:.3f}, acc={acc:.1%}")
 
             print(f"  GPU Memory: {torch.cuda.memory_allocated() / 1e9:.1f} GB")

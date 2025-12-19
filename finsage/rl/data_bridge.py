@@ -511,7 +511,7 @@ class MARFTEnvWrapper:
         base_env,  # MultiAssetTradingEnv
         formatter: ObservationFormatter,
         converter: ActionConverter,
-        num_agents: int = 5,
+        num_agents: int = 9,  # 5 Asset Experts + 4 Meta-Level Agents
     ):
         self.env = base_env
         self.formatter = formatter
@@ -588,7 +588,7 @@ class MARFTEnvWrapper:
 
 def create_data_bridge(
     asset_universe: Dict[str, List[str]],
-    num_agents: int = 5,
+    num_agents: int = 9,  # 5 Asset Experts + 4 Meta-Level Agents
     device: str = "cpu",
 ) -> Tuple[ObservationFormatter, ActionConverter, BatchProcessor]:
     """

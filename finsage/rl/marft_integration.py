@@ -79,6 +79,48 @@ FINSAGE_AGENT_PROFILES = [
         "asset_class": "crypto",
         "dependencies": ["Stock_Expert"],  # 与风险资产相关
     },
+    # ============ Meta-Level Agents (4个) ============
+    {
+        "role": "Portfolio_Manager",
+        "expertise": """你是一位资深的组合管理专家，负责:
+- 战略配置：确定各资产类别的长期配置权重
+- 战术调整：根据市场环境做出短期调整
+- 风险预算：在不同资产类别间分配风险预算
+- 再平衡决策：确定最佳再平衡时机和方式""",
+        "asset_class": "portfolio",
+        "dependencies": ["Stock_Expert", "Bond_Expert", "Commodity_Expert", "REITs_Expert", "Crypto_Expert"],
+    },
+    {
+        "role": "Hedging_Agent",
+        "expertise": """你是一位专业的风险对冲专家，负责:
+- 尾部风险：识别和管理极端市场风险
+- 对冲策略：选择最优对冲工具和方法
+- 成本效益：平衡对冲成本和保护水平
+- 动态调整：根据市场变化调整对冲比例""",
+        "asset_class": "hedging",
+        "dependencies": ["Stock_Expert", "Bond_Expert", "Commodity_Expert", "REITs_Expert", "Crypto_Expert"],
+    },
+    {
+        "role": "Position_Sizing_Agent",
+        "expertise": """你是一位仓位管理专家，负责:
+- 风险平价：实现跨资产的风险均衡配置
+- Kelly准则：基于预期收益和风险的最优仓位
+- 波动率调整：根据市场波动调整仓位规模
+- 流动性约束：考虑交易成本和市场冲击""",
+        "asset_class": "sizing",
+        "dependencies": ["Stock_Expert", "Bond_Expert", "Commodity_Expert", "REITs_Expert", "Crypto_Expert"],
+    },
+    {
+        "role": "Risk_Controller",
+        "expertise": """你是一位风险控制专家，负责:
+- 风险监控：实时监控组合风险敞口
+- 止损执行：确定和执行止损策略
+- 压力测试：评估极端情景下的组合表现
+- 合规检查：确保投资决策符合风险限制""",
+        "asset_class": "risk",
+        "dependencies": ["Stock_Expert", "Bond_Expert", "Commodity_Expert", "REITs_Expert", "Crypto_Expert",
+                        "Portfolio_Manager", "Hedging_Agent", "Position_Sizing_Agent"],
+    },
 ]
 
 

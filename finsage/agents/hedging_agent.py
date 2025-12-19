@@ -313,7 +313,10 @@ class HedgingAgent:
             "kurtosis": 3.0,
         }
 
-        if not returns_data:
+        # 检查 returns_data 是否为空 (支持 dict 和 DataFrame)
+        has_returns = (isinstance(returns_data, pd.DataFrame) and not returns_data.empty) or \
+                      (isinstance(returns_data, dict) and len(returns_data) > 0)
+        if not has_returns:
             return tail_risk
 
         if isinstance(returns_data, dict):
@@ -418,11 +421,11 @@ class HedgingAgent:
         try:
             response = self.llm.create_completion(
                 messages=[
-                    {"role": "system", "content": "你是专业的风险对冲专家，请选择最优对冲策略。输出JSON。"},
+                    {"role": "system", "content": "你是专业的风险对冲专家，请选择最优对冲策略。只输出JSON，不要其他内容。"},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.3,
-                max_tokens=400,
+                max_tokens=600,  # 增加以防止 JSON 截断
             )
 
             data = json.loads(response)
@@ -623,11 +626,11 @@ class HedgingAgent:
         try:
             response = self.llm.create_completion(
                 messages=[
-                    {"role": "system", "content": "你是对冲策略专家，根据其他专家的反馈调整对冲参数。输出JSON。"},
+                    {"role": "system", "content": "你是对冲策略专家，根据其他专家的反馈调整对冲参数。只输出JSON，不要其他内容。"},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.3,
-                max_tokens=400,
+                max_tokens=600,  # 增加以防止 JSON 截断
             )
 
             data = json.loads(response)

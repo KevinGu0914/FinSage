@@ -124,12 +124,16 @@ data/cache/
 # Results and logs (keep structure, ignore content)
 results/*.json
 results/*.csv
+results/*.log
 results/logs/
 logs/*.log
 logs/*.txt
 
-# Checkpoints
+# Checkpoints (training checkpoints, not trained models)
 checkpoints/
+checkpoints_backup/
+
+# Keep trained LoRA models (checkpoints_trained/ is NOT ignored)
 
 # Memory (if using persistent memory)
 memory/

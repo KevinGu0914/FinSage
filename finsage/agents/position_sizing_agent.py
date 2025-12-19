@@ -160,11 +160,11 @@ class PositionSizingAgent:
         try:
             response = self.llm.create_completion(
                 messages=[
-                    {"role": "system", "content": "你是专业的仓位管理专家，请选择最优仓位方法。输出JSON。"},
+                    {"role": "system", "content": "你是专业的仓位管理专家，请选择最优仓位方法。只输出JSON，不要其他内容。"},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.3,
-                max_tokens=300,
+                max_tokens=500,  # 增加以防止 JSON 截断
             )
 
             data = json.loads(response)
@@ -218,9 +218,13 @@ class PositionSizingAgent:
         """
         风险平价配置: 每个资产贡献相等的风险
         """
+        import pandas as pd
         returns_data = market_data.get("returns", {})
 
-        if not returns_data:
+        # 检查 returns_data 是否为空 (支持 dict 和 DataFrame)
+        has_returns = (isinstance(returns_data, pd.DataFrame) and not returns_data.empty) or \
+                      (isinstance(returns_data, dict) and len(returns_data) > 0)
+        if not has_returns:
             # 回退到等权
             return self._equal_weight_sizing(target_allocation)
 
@@ -251,9 +255,13 @@ class PositionSizingAgent:
         """
         波动率目标配置: 调整权重使组合波动率达到目标
         """
+        import pandas as pd
         returns_data = market_data.get("returns", {})
 
-        if not returns_data:
+        # 检查 returns_data 是否为空 (支持 dict 和 DataFrame)
+        has_returns = (isinstance(returns_data, pd.DataFrame) and not returns_data.empty) or \
+                      (isinstance(returns_data, dict) and len(returns_data) > 0)
+        if not has_returns:
             return target_allocation
 
         import pandas as pd
@@ -294,9 +302,13 @@ class PositionSizingAgent:
         """
         Kelly 准则配置: 基于预期收益和风险的最优配置
         """
+        import pandas as pd
         returns_data = market_data.get("returns", {})
 
-        if not returns_data:
+        # 检查 returns_data 是否为空 (支持 dict 和 DataFrame)
+        has_returns = (isinstance(returns_data, pd.DataFrame) and not returns_data.empty) or \
+                      (isinstance(returns_data, dict) and len(returns_data) > 0)
+        if not has_returns:
             return target_allocation
 
         import pandas as pd
@@ -354,9 +366,13 @@ class PositionSizingAgent:
         market_data: Dict[str, Any],
     ) -> Dict[str, float]:
         """计算每个资产的风险贡献"""
+        import pandas as pd
         returns_data = market_data.get("returns", {})
 
-        if not returns_data:
+        # 检查 returns_data 是否为空 (支持 dict 和 DataFrame)
+        has_returns = (isinstance(returns_data, pd.DataFrame) and not returns_data.empty) or \
+                      (isinstance(returns_data, dict) and len(returns_data) > 0)
+        if not has_returns:
             # 简单假设等比例风险贡献
             return {asset: size for asset, size in sizes.items()}
 
@@ -432,11 +448,11 @@ class PositionSizingAgent:
         try:
             response = self.llm.create_completion(
                 messages=[
-                    {"role": "system", "content": "你是仓位管理专家，根据其他专家的反馈调整仓位。输出JSON。"},
+                    {"role": "system", "content": "你是仓位管理专家，根据其他专家的反馈调整仓位。只输出JSON，不要其他内容。"},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.3,
-                max_tokens=500,
+                max_tokens=600,  # 增加以防止 JSON 截断
             )
 
             data = json.loads(response)

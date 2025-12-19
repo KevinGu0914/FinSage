@@ -16,6 +16,11 @@ from finsage.strategies.base_strategy import AllocationStrategy
 logger = logging.getLogger(__name__)
 
 
+def _is_valid_dataframe(data: Any) -> bool:
+    """Check if data is a valid non-empty DataFrame."""
+    return isinstance(data, pd.DataFrame) and not data.empty
+
+
 class TacticalAllocationStrategy(AllocationStrategy):
     """
     战术资产配置策略 (Tactical Asset Allocation, TAA)
@@ -175,7 +180,7 @@ class TacticalAllocationStrategy(AllocationStrategy):
         """
         signals = {}
         for ac in asset_classes:
-            if ac in market_data and not market_data[ac].empty:
+            if ac in market_data and _is_valid_dataframe(market_data[ac]):
                 returns = market_data[ac].mean(axis=1)
                 if len(returns) >= 252:
                     # 12个月动量，跳过最近1个月
@@ -205,7 +210,7 @@ class TacticalAllocationStrategy(AllocationStrategy):
         """
         signals = {}
         for ac in asset_classes:
-            if ac in market_data and not market_data[ac].empty:
+            if ac in market_data and _is_valid_dataframe(market_data[ac]):
                 returns = market_data[ac].mean(axis=1)
                 if len(returns) >= 252:
                     # 当前累计收益相对历史均值
@@ -237,7 +242,7 @@ class TacticalAllocationStrategy(AllocationStrategy):
         volatilities = {}
 
         for ac in asset_classes:
-            if ac in market_data and not market_data[ac].empty:
+            if ac in market_data and _is_valid_dataframe(market_data[ac]):
                 returns = market_data[ac].mean(axis=1)
                 if len(returns) >= 21:
                     vol = returns.iloc[-21:].std() * np.sqrt(252)
@@ -381,7 +386,7 @@ class TacticalAllocationStrategy(AllocationStrategy):
         # 估计协方差矩阵
         returns_list = []
         for ac in asset_classes:
-            if ac in market_data and not market_data[ac].empty:
+            if ac in market_data and _is_valid_dataframe(market_data[ac]):
                 returns_list.append(market_data[ac].mean(axis=1))
             else:
                 returns_list.append(pd.Series([0]))

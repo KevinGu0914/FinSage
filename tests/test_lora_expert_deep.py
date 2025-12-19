@@ -1273,13 +1273,19 @@ class TestFinSageMASInit:
             bf16=False
         )
 
-        assert mas.num_agents == 5
-        assert len(mas.experts) == 5
+        assert mas.num_agents == 9  # 5 Asset Experts + 4 Meta-Level Agents
+        assert len(mas.experts) == 9
+        # Asset Experts
         assert "Stock_Expert" in mas.experts
         assert "Bond_Expert" in mas.experts
         assert "Commodity_Expert" in mas.experts
         assert "REITs_Expert" in mas.experts
         assert "Crypto_Expert" in mas.experts
+        # Meta-Level Agents
+        assert "Portfolio_Manager" in mas.experts
+        assert "Hedging_Agent" in mas.experts
+        assert "Position_Sizing_Agent" in mas.experts
+        assert "Risk_Controller" in mas.experts
 
     @patch('finsage.rl.lora_expert.HAS_TRANSFORMERS', True)
     @patch('finsage.rl.lora_expert.LoRAExpert')
@@ -1464,8 +1470,11 @@ class TestFinSageMASJointAction:
             mock_expert._build_prompt.return_value = f"Prompt for {role}"
             return mock_expert
 
-        # 为每个调用返回不同的expert
-        roles = ["Stock_Expert", "Bond_Expert", "Commodity_Expert", "REITs_Expert", "Crypto_Expert"]
+        # 为每个调用返回不同的expert (5 Asset Experts + 4 Meta-Level Agents)
+        roles = [
+            "Stock_Expert", "Bond_Expert", "Commodity_Expert", "REITs_Expert", "Crypto_Expert",
+            "Portfolio_Manager", "Hedging_Agent", "Position_Sizing_Agent", "Risk_Controller"
+        ]
         mock_lora_expert.side_effect = [create_mock_expert(role) for role in roles]
 
         mas = FinSageMAS(
@@ -1477,10 +1486,10 @@ class TestFinSageMASJointAction:
         market_obs = "Market observation data"
         actions, tokens, prompts = mas.generate_joint_action(market_obs)
 
-        # 验证返回5个动作
-        assert len(actions) == 5
-        assert len(tokens) == 5
-        assert len(prompts) == 5
+        # 验证返回9个动作 (5 Asset Experts + 4 Meta-Level Agents)
+        assert len(actions) == 9
+        assert len(tokens) == 9
+        assert len(prompts) == 9
 
         # 验证每个动作都有role
         for action in actions:
@@ -1555,7 +1564,7 @@ class TestFinSageMASJointLogProb:
         )
 
         batch_size = 3
-        num_agents = 5
+        num_agents = 9  # 5 Asset Experts + 4 Meta-Level Agents
 
         obs_list = ["Obs1", "Obs2", "Obs3"]
         action_tokens_list = [
@@ -1598,7 +1607,7 @@ class TestFinSageMASJointLogProb:
 
         obs_list = ["Market observation"]
         action_tokens_list = [
-            [torch.tensor([10, 20, 30]) for _ in range(5)]
+            [torch.tensor([10, 20, 30]) for _ in range(9)]  # 9 experts
         ]
 
         log_probs, entropies = mas.get_joint_action_log_probs(
@@ -1606,8 +1615,8 @@ class TestFinSageMASJointLogProb:
             action_tokens_list
         )
 
-        assert log_probs.shape == (1, 5)
-        assert entropies.shape == (1, 5)
+        assert log_probs.shape == (1, 9)  # 9 experts
+        assert entropies.shape == (1, 9)  # 9 experts
 
 
 # ============================================================
@@ -1824,9 +1833,9 @@ class TestEdgeCases:
             bf16=False
         )
 
-        # 验证使用了默认profiles（5个专家）
-        assert mas.num_agents == 5
-        assert len(mas.experts) == 5
+        # 验证使用了默认profiles（9个专家: 5 Asset + 4 Meta-Level）
+        assert mas.num_agents == 9
+        assert len(mas.experts) == 9
 
 
 # ============================================================

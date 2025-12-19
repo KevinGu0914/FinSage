@@ -280,13 +280,13 @@ class TestFinSageActionBuffer:
 
         buffer = FinSageActionBuffer(
             episode_length=100,
-            num_agents=5,
+            num_agents=9,  # 5 Asset Experts + 4 Meta-Level Agents
             gamma=0.99,
             gae_lambda=0.95
         )
 
         assert buffer.episode_length == 100
-        assert buffer.num_agents == 5
+        assert buffer.num_agents == 9  # 5 Asset Experts + 4 Meta-Level Agents
         assert buffer.gamma == 0.99
         assert buffer.gae_lambda == 0.95
         assert buffer.step == 0

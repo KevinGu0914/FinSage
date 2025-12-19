@@ -158,19 +158,25 @@ class ModelConfig:
 class ExpertConfig:
     """Expert配置"""
 
-    # Expert数量
-    num_agents: int = 5
+    # Expert数量 (5 Asset Experts + 4 Meta-Level Agents)
+    num_agents: int = 9
 
-    # Expert角色
+    # Expert角色 (包含所有9个专家)
     roles: List[str] = field(default_factory=lambda: [
+        # Asset Experts (5个)
         "Stock_Expert",
         "Bond_Expert",
         "Commodity_Expert",
         "REITs_Expert",
         "Crypto_Expert",
+        # Meta-Level Agents (4个)
+        "Portfolio_Manager",
+        "Hedging_Agent",
+        "Position_Sizing_Agent",
+        "Risk_Controller",
     ])
 
-    # 资产类别映射
+    # 资产类别映射 (仅针对Asset Experts)
     asset_classes: List[str] = field(default_factory=lambda: [
         "stocks",
         "bonds",
@@ -179,13 +185,20 @@ class ExpertConfig:
         "crypto",
     ])
 
-    # 依赖关系
+    # 依赖关系 (包含所有9个专家)
     dependencies: Dict[str, List[str]] = field(default_factory=lambda: {
+        # Asset Experts
         "Stock_Expert": [],
         "Bond_Expert": ["Stock_Expert"],
         "Commodity_Expert": ["Stock_Expert", "Bond_Expert"],
         "REITs_Expert": ["Stock_Expert", "Bond_Expert"],
         "Crypto_Expert": ["Stock_Expert"],
+        # Meta-Level Agents - 依赖所有Asset Experts
+        "Portfolio_Manager": ["Stock_Expert", "Bond_Expert", "Commodity_Expert", "REITs_Expert", "Crypto_Expert"],
+        "Hedging_Agent": ["Stock_Expert", "Bond_Expert", "Commodity_Expert", "REITs_Expert", "Crypto_Expert"],
+        "Position_Sizing_Agent": ["Stock_Expert", "Bond_Expert", "Commodity_Expert", "REITs_Expert", "Crypto_Expert"],
+        "Risk_Controller": ["Stock_Expert", "Bond_Expert", "Commodity_Expert", "REITs_Expert", "Crypto_Expert",
+                           "Portfolio_Manager", "Hedging_Agent", "Position_Sizing_Agent"],
     })
 
 

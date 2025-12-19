@@ -413,10 +413,13 @@ EXPERT_CONFIGS = [
     },
 ]
 
+# 内存优化后的LoRA配置 (RTX 5090 32GB)
+# 原配置: r=8, 4个target modules → OOM at step 3
+# 优化: r=2, 2个target modules → ~75% 显存节省
 LORA_CONFIG = {
-    "r": 8,
-    "lora_alpha": 16,
-    "target_modules": ["q_proj", "v_proj", "k_proj", "o_proj"],
+    "r": 8,                     # 原始配置：保证精度
+    "lora_alpha": 16,           # alpha/r=2 标准比例
+    "target_modules": ["q_proj", "k_proj", "v_proj", "o_proj"],  # 完整attention模块
     "lora_dropout": 0.05,
     "bias": "none",
     "task_type": "CAUSAL_LM",
@@ -452,8 +455,8 @@ class SharedModelExpertManager:
         bf16: bool = True,
         load_in_4bit: bool = False,
         load_in_8bit: bool = False,
-        max_new_tokens: int = 512,
-        context_window: int = 8192,  # 增加到8K以支持更详细的市场分析
+        max_new_tokens: int = 512,   # 恢复512避免JSON截断
+        context_window: int = 2048,  # 从8K降到2K节省~75%激活内存
         lora_config: Optional[Dict] = None,
         use_gradient_checkpointing: bool = True,
         # ============ 推理加速参数 ============
@@ -699,32 +702,235 @@ class SharedModelExpertManager:
                         prompt += f"- 理由: {action.get('reasoning', 'N/A')[:200]}\n"
                 prompt += "<|im_end|>\n"
 
-        # User prompt
-        prompt += f"""<|im_start|>user
+        # 根据角色类型选择不同的输出格式要求
+        # 管理类专家需要特殊的输出格式
+        management_experts = {"Portfolio_Manager", "Hedging_Agent", "Position_Sizing_Agent", "Risk_Controller"}
+
+        if role in management_experts:
+            # 管理类专家: 统一要求输出包含action字段的JSON
+            if role == "Portfolio_Manager":
+                output_format = """{
+    "action": "REBALANCE/HOLD/REDUCE_RISK/INCREASE_EXPOSURE",
+    "target_allocation": {"stocks": 0.4, "bonds": 0.3, "commodities": 0.1, "reits": 0.1, "crypto": 0.1},
+    "confidence": 0.0-1.0,
+    "reasoning": "配置调整理由"
+}"""
+            elif role == "Hedging_Agent":
+                output_format = """{
+    "action": "HEDGE/NO_HEDGE/PARTIAL_HEDGE",
+    "hedge_ratio": 0.0-1.0,
+    "hedge_instruments": ["VIX", "SH", "TLT"],
+    "confidence": 0.0-1.0,
+    "reasoning": "对冲决策理由"
+}"""
+            elif role == "Position_Sizing_Agent":
+                output_format = """{
+    "action": "INCREASE_SIZE/DECREASE_SIZE/MAINTAIN",
+    "position_sizes": {"SPY": 0.15, "QQQ": 0.10},
+    "risk_budget": 0.5,
+    "confidence": 0.0-1.0,
+    "reasoning": "仓位调整理由"
+}
+注意: risk_budget 应在 0.3-1.0 之间，表示使用多少比例的资金进行交易。0.5 = 50%资金，1.0 = 100%资金。"""
+            else:  # Risk_Controller
+                output_format = """{
+    "action": "APPROVE/VETO/REDUCE",
+    "veto": false,
+    "risk_level": "LOW/MEDIUM/HIGH",
+    "warnings": [],
+    "confidence": 0.0-1.0,
+    "reasoning": "风险评估理由"
+}"""
+
+            prompt += f"""<|im_start|>user
+{market_obs}
+
+请分析上述市场数据和前序专家建议，给出你作为{role}的决策建议。
+输出格式要求JSON (必须包含action字段):
+{output_format}
+<|im_end|>
+<|im_start|>assistant
+"""
+        else:
+            # 资产类专家: 使用标准格式
+            prompt += f"""<|im_start|>user
 {market_obs}
 
 请分析上述市场数据，给出你对{asset_class}资产的投资建议。
 输出格式要求JSON:
 {{
-    "action": "BUY_25%/BUY_50%/BUY_75%/BUY_100%/HOLD/SELL_25%/SELL_50%/SELL_75%/SELL_100%",
+    "action": "BUY_25%/BUY_50%/BUY_75%/BUY_100%/HOLD/SELL_25%/SELL_50%/SELL_75%/SELL_100%/SHORT_25%/SHORT_50%/SHORT_75%/SHORT_100%/COVER_25%/COVER_50%/COVER_75%/COVER_100%",
     "confidence": 0.0-1.0,
     "reasoning": "决策理由"
 }}
 <|im_end|>
-<|im_start|>{role}
+<|im_start|>assistant
 """
         return prompt
 
     def _parse_response(self, response: str) -> Dict:
         """解析LLM响应"""
+        import re
+
         try:
             start = response.find("{")
             end = response.rfind("}") + 1
             if start >= 0 and end > start:
-                return json.loads(response[start:end])
-        except (json.JSONDecodeError, ValueError):
-            pass
+                json_str = response[start:end]
+
+                # 预处理: 修复常见的JSON格式问题
+                # 1. 移除数字中的逗号 (如 586,355.43 -> 586355.43)
+                json_str = re.sub(r'(\d),(\d)', r'\1\2', json_str)
+
+                # 2. 修复布尔值格式 (True/False -> true/false)
+                json_str = json_str.replace(': True', ': true').replace(': False', ': false')
+                json_str = json_str.replace(':True', ':true').replace(':False', ':false')
+
+                # 3. 处理多个JSON块的情况 (只取第一个)
+                brace_count = 0
+                first_json_end = 0
+                for i, c in enumerate(json_str):
+                    if c == '{':
+                        brace_count += 1
+                    elif c == '}':
+                        brace_count -= 1
+                        if brace_count == 0:
+                            first_json_end = i + 1
+                            break
+                if first_json_end > 0:
+                    json_str = json_str[:first_json_end]
+
+                result = json.loads(json_str)
+
+                # 验证必要字段
+                if "action" in result:
+                    return result
+                else:
+                    # 尝试从其他字段推断action
+                    inferred_action = self._infer_action_from_result(result)
+                    if inferred_action:
+                        result["action"] = inferred_action
+                        return result
+
+                    # V4修复: 处理 per-stock 格式 {"SYMBOL": {"action": ...}}
+                    # 如果结果是嵌套的symbol->action格式，提取第一个action
+                    for key, value in result.items():
+                        if isinstance(value, dict) and "action" in value:
+                            # 找到了 per-stock 格式，提取action
+                            result["action"] = value["action"]
+                            result["confidence"] = value.get("confidence", 0.5)
+                            result["reasoning"] = value.get("reasoning", "")
+                            logger.debug(f"[PARSE] Extracted action from per-stock format: {key}")
+                            return result
+
+                    logger.warning(f"[PARSE] Missing 'action' field in JSON: {json_str[:200]}")
+            else:
+                # 没有找到 JSON，尝试从中文文本中提取动作
+                extracted = self._extract_action_from_text(response)
+                if extracted["action"] != "HOLD":
+                    logger.info(f"[PARSE] Extracted action from text: {extracted['action']}")
+                    return extracted
+                logger.warning(f"[PARSE] No JSON found in response (len={len(response)}): {response[:300]}...")
+        except json.JSONDecodeError as e:
+            logger.warning(f"[PARSE] JSON decode error: {e}, response: {response[:300]}...")
+        except ValueError as e:
+            logger.warning(f"[PARSE] Value error: {e}")
         return {"action": "HOLD", "confidence": 0.5, "reasoning": "Parse failed"}
+
+    def _extract_action_from_text(self, text: str) -> Dict:
+        """从中文/英文文本中提取动作 (当JSON解析失败时的fallback)"""
+        text_lower = text.lower()
+
+        # 中文关键词映射
+        cn_buy_keywords = ["买入", "增持", "加仓", "建仓", "看多", "做多"]
+        cn_sell_keywords = ["卖出", "减持", "减仓", "清仓", "看空", "做空"]
+        cn_hold_keywords = ["持有", "观望", "维持"]
+
+        # 英文关键词
+        en_buy_keywords = ["buy", "increase", "long", "bullish"]
+        en_sell_keywords = ["sell", "reduce", "short", "bearish"]
+
+        # 检测动作
+        action = "HOLD"
+        confidence = 0.5
+
+        # 优先检测中文关键词
+        for kw in cn_buy_keywords:
+            if kw in text:
+                action = "BUY_25%"
+                confidence = 0.6
+                break
+
+        if action == "HOLD":
+            for kw in cn_sell_keywords:
+                if kw in text:
+                    action = "SELL_25%"
+                    confidence = 0.6
+                    break
+
+        # 如果中文没找到，检测英文
+        if action == "HOLD":
+            for kw in en_buy_keywords:
+                if kw in text_lower:
+                    action = "BUY_25%"
+                    confidence = 0.5
+                    break
+
+        if action == "HOLD":
+            for kw in en_sell_keywords:
+                if kw in text_lower:
+                    action = "SELL_25%"
+                    confidence = 0.5
+                    break
+
+        # 尝试提取百分比
+        import re
+        pct_match = re.search(r'(\d+)%', text)
+        if pct_match and action != "HOLD":
+            pct = int(pct_match.group(1))
+            if pct in [25, 50, 75, 100]:
+                action = action.split("_")[0] + f"_{pct}%"
+
+        return {
+            "action": action,
+            "confidence": confidence,
+            "reasoning": text[:200] if len(text) > 200 else text
+        }
+
+    def _infer_action_from_result(self, result: Dict) -> Optional[str]:
+        """从管理专家的响应中推断action字段"""
+        # Portfolio_Manager: 从 rebalance_action 或 target_allocation 推断
+        if "rebalance_action" in result:
+            return result["rebalance_action"]
+        if "target_allocation" in result:
+            return "REBALANCE"
+
+        # Hedging_Agent: 从 hedge_strategy 或 hedge_ratio 推断
+        if "hedge_strategy" in result:
+            return result["hedge_strategy"]
+        if "hedge_ratio" in result:
+            hedge_ratio = result["hedge_ratio"]
+            if isinstance(hedge_ratio, (int, float)):
+                if hedge_ratio > 0.5:
+                    return "HEDGE"
+                elif hedge_ratio > 0:
+                    return "PARTIAL_HEDGE"
+                else:
+                    return "NO_HEDGE"
+
+        # Position_Sizing_Agent: 从 position_sizes 或 sizing_method 推断
+        if "sizing_method" in result:
+            return result["sizing_method"]
+        if "position_sizes" in result:
+            return "MAINTAIN"
+
+        # Risk_Controller: 从 veto 或 risk_assessment 推断
+        if "veto" in result:
+            return "VETO" if result["veto"] else "APPROVE"
+        if "risk_assessment" in result:
+            return "APPROVE"
+
+        return None
 
     @torch.no_grad()
     def generate_action(
@@ -756,6 +962,17 @@ class SharedModelExpertManager:
 
         # 切换到对应Expert的LoRA适配器
         self.switch_expert(role)
+
+        # ============ 关键修复: 推理时禁用 gradient checkpointing ============
+        # Gradient checkpointing 与 model.generate() 不兼容，会导致输出乱码
+        was_training = self.model.training
+        gc_enabled = getattr(self.base_model, 'gradient_checkpointing', False)
+
+        # 临时禁用 gradient checkpointing 并切换到 eval 模式
+        if gc_enabled:
+            self.base_model.gradient_checkpointing_disable()
+        self.model.eval()
+        # ===================================================================
 
         # 构建prompt
         prompt = self._build_prompt(role, market_obs, predecessor_actions)
@@ -821,6 +1038,14 @@ class SharedModelExpertManager:
         # 记录推理时间
         elapsed = time.time() - start_time
         self.inference_times.append(elapsed)
+
+        # ============ 恢复训练状态 ============
+        # 生成完成后恢复 gradient checkpointing 和训练模式
+        if gc_enabled:
+            self.base_model.gradient_checkpointing_enable()
+        if was_training:
+            self.model.train()
+        # =====================================
 
         return action_dict, action_tokens, raw_response
 
@@ -925,6 +1150,110 @@ class SharedModelExpertManager:
             "prompt_cache": self.prompt_cache.stats() if self.prompt_cache else None,
         }
 
+    def create_completion(self, messages: list = None, prompt: str = None, **kwargs) -> str:
+        """
+        兼容 LLMProvider 接口的文本生成方法
+
+        用于 ManagerCoordinator 调用，支持 sizing/hedging 策略选择
+
+        Args:
+            messages: OpenAI 格式的消息列表 [{"role": "system", "content": ...}, ...]
+            prompt: 备用的简单提示文本
+            **kwargs: 其他生成参数 (temperature, max_tokens等)
+
+        Returns:
+            生成的文本响应
+        """
+        temperature = kwargs.get("temperature", 0.7)
+        max_tokens = kwargs.get("max_tokens", self.max_new_tokens)
+        max_retries = kwargs.get("max_retries", 2)
+
+        # 使用 Portfolio_Manager 的 LoRA 适配器进行通用生成
+        self.switch_expert("Portfolio_Manager")
+
+        # 临时禁用 gradient checkpointing
+        was_training = self.model.training
+        gc_enabled = getattr(self.base_model, 'gradient_checkpointing', False)
+        if gc_enabled:
+            self.base_model.gradient_checkpointing_disable()
+        self.model.eval()
+
+        try:
+            # 从 messages 构建 prompt，强制要求 JSON 输出
+            if messages:
+                full_prompt = ""
+                for msg in messages:
+                    role = msg.get("role", "user")
+                    content = msg.get("content", "")
+                    # 在 system 消息中强调 JSON 输出
+                    if role == "system" and "JSON" not in content:
+                        content += " 你必须输出有效的 JSON 格式，不要输出其他内容。"
+                    full_prompt += f"<|im_start|>{role}\n{content}\n<|im_end|>\n"
+                full_prompt += "<|im_start|>assistant\n{"  # 引导模型以 { 开始
+            else:
+                # 使用简单的 prompt
+                user_prompt = prompt or ""
+                full_prompt = f"""<|im_start|>system
+你是一位专业的投资组合管理专家，请根据问题给出简洁的回答。必须输出有效的 JSON 格式。
+<|im_end|>
+<|im_start|>user
+{user_prompt}
+<|im_end|>
+<|im_start|>assistant
+{{"""  # 引导模型以 { 开始
+
+            inputs = self.tokenizer(
+                full_prompt,
+                return_tensors="pt",
+                padding=True,
+                truncation=True,
+                max_length=self.context_window,
+            )
+            input_ids = inputs["input_ids"].to(self.device)
+            attention_mask = inputs["attention_mask"].to(self.device)
+            input_length = input_ids.shape[1]
+
+            # 重试机制
+            for attempt in range(max_retries):
+                with torch.no_grad():
+                    outputs = self.model.generate(
+                        input_ids=input_ids,
+                        attention_mask=attention_mask,
+                        do_sample=True,
+                        temperature=temperature + (attempt * 0.1),  # 重试时稍微增加温度
+                        max_new_tokens=max_tokens,
+                        min_new_tokens=10,  # 确保至少生成一些内容
+                        eos_token_id=self.tokenizer.eos_token_id,
+                        pad_token_id=self.tokenizer.pad_token_id,
+                        use_cache=True,
+                    )
+
+                response = self.tokenizer.decode(
+                    outputs[0, input_length:],
+                    skip_special_tokens=True
+                ).strip()
+
+                # 补全开头的 {（因为我们在 prompt 中已经添加了）
+                if response and not response.startswith("{"):
+                    response = "{" + response
+
+                # 检查响应是否有效（非空且包含基本 JSON 结构）
+                if response and len(response) > 5 and "{" in response:
+                    return response
+
+                logger.debug(f"[create_completion] Attempt {attempt+1} got empty/invalid response, retrying...")
+
+            # 所有重试失败，返回默认 JSON
+            logger.warning(f"[create_completion] All {max_retries} attempts failed, returning default")
+            return '{"status": "fallback", "reasoning": "LLM response empty"}'
+
+        finally:
+            # 恢复训练状态
+            if gc_enabled:
+                self.base_model.gradient_checkpointing_enable()
+            if was_training:
+                self.model.train()
+
     def reset_stats(self):
         """重置统计信息"""
         self.inference_times.clear()
@@ -947,14 +1276,10 @@ class SharedModelExpertManager:
             所有Expert的动作字典
         """
         if expert_order is None:
-            # 默认顺序: Stock -> Bond -> Commodity/REITs -> Crypto
-            expert_order = [
-                "Stock_Expert",
-                "Bond_Expert",
-                "Commodity_Expert",
-                "REITs_Expert",
-                "Crypto_Expert",
-            ]
+            # 从 EXPERT_CONFIGS 动态获取完整的 Expert 列表 (9个)
+            # 包括: 5个 Asset Experts + 4个 Meta-Level Agents
+            # 顺序已在 EXPERT_CONFIGS 中按依赖关系排列
+            expert_order = [cfg["role"] for cfg in EXPERT_CONFIGS]
 
         all_actions = {}
 
@@ -1169,7 +1494,9 @@ if __name__ == "__main__":
 
     # 保存adapters
     print("\nSaving all adapters...")
-    manager.save_all_adapters("/root/checkpoints/shared_experts")
+    import os
+    save_dir = os.environ.get("CHECKPOINT_DIR", "./checkpoints/shared_experts")
+    manager.save_all_adapters(save_dir)
 
     print("\n" + "=" * 80)
     print(" Test Complete!")

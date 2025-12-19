@@ -163,6 +163,10 @@ class PortfolioState:
         weights["cash"] = self.cash / total
         return weights
 
+    def get_weights(self) -> Dict[str, float]:
+        """获取当前资产权重（方法版本，兼容旧接口）"""
+        return self.weights
+
     @property
     def class_weights(self) -> Dict[str, float]:
         """按资产类别的权重"""

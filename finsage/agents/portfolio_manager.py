@@ -318,10 +318,13 @@ class PortfolioManager:
         # 3. 计算波动率变化 (如果有历史数据)
         volatility_change = 0.0
         returns_data = market_data.get("returns", {})
-        if returns_data:
-            import pandas as pd
+        # V4 Fix: 正确检查 DataFrame/dict 是否有数据
+        import pandas as pd
+        has_returns = (isinstance(returns_data, pd.DataFrame) and not returns_data.empty) or \
+                      (isinstance(returns_data, dict) and len(returns_data) > 0)
+        if has_returns:
             try:
-                returns_df = pd.DataFrame(returns_data)
+                returns_df = pd.DataFrame(returns_data) if isinstance(returns_data, dict) else returns_data
                 if len(returns_df) >= 20:
                     # 比较近5日vs前15日波动率
                     recent_vol = returns_df.iloc[-5:].std().mean()
@@ -333,9 +336,9 @@ class PortfolioManager:
 
         # 4. 计算相关性变化 (如果有历史数据)
         correlation_change = 0.0
-        if returns_data:
+        if has_returns:
             try:
-                returns_df = pd.DataFrame(returns_data)
+                returns_df = pd.DataFrame(returns_data) if isinstance(returns_data, dict) else returns_data
                 if len(returns_df) >= 30:
                     # 比较近10日vs前20日平均相关性
                     recent_corr = returns_df.iloc[-10:].corr().values
@@ -613,8 +616,11 @@ class PortfolioManager:
 
         # 准备收益率数据
         returns_data = market_data.get("returns", {})
-        if returns_data:
-            returns_df = pd.DataFrame(returns_data)
+        # V4 Fix: 正确检查 DataFrame/dict 是否有数据
+        has_returns_data = (isinstance(returns_data, pd.DataFrame) and not returns_data.empty) or \
+                           (isinstance(returns_data, dict) and len(returns_data) > 0)
+        if has_returns_data:
+            returns_df = pd.DataFrame(returns_data) if isinstance(returns_data, dict) else returns_data
         else:
             # 没有收益率数据，直接返回 LLM 动态配置
             return self._apply_allocation_bounds(dynamic_class_weights)
@@ -885,7 +891,10 @@ class PortfolioManager:
             # 获取收益率数据
             returns_data = market_data.get("returns", {})
 
-            if not returns_data:
+            # 检查 returns_data 是否为空 (支持 dict 和 DataFrame)
+            has_returns = (isinstance(returns_data, pd.DataFrame) and not returns_data.empty) or \
+                          (isinstance(returns_data, dict) and len(returns_data) > 0)
+            if not has_returns:
                 # 首日或数据不可用时使用 VIX 估计（这是正常行为）
                 logger.debug("No returns data in market_data, using VIX-based volatility estimate")
                 vix = market_data.get("macro", {}).get("vix", 20.0)

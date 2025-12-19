@@ -213,14 +213,14 @@ def test_marft_integration():
             FinSageRewardFunction,
         )
 
-        # 测试Agent Profiles
-        assert len(FINSAGE_AGENT_PROFILES) == 5
+        # 测试Agent Profiles (5 Asset Experts + 4 Meta-Level Agents)
+        assert len(FINSAGE_AGENT_PROFILES) == 9
         print_ok(f"Agent profiles: {[p['role'] for p in FINSAGE_AGENT_PROFILES]}")
 
-        # 测试Action Buffer
+        # 测试Action Buffer (9 experts)
         buffer = FinSageActionBuffer(
             episode_length=100,
-            num_agents=5,
+            num_agents=9,  # 5 Asset Experts + 4 Meta-Level Agents
             gamma=0.99,
             gae_lambda=0.95,
         )
@@ -228,11 +228,11 @@ def test_marft_integration():
         # 插入数据
         for _ in range(10):
             buffer.insert(
-                obs=["obs"] * 5,
-                actions=[{"action": "HOLD"}] * 5,
-                log_probs=[0.0] * 5,
+                obs=["obs"] * 9,
+                actions=[{"action": "HOLD"}] * 9,
+                log_probs=[0.0] * 9,
                 reward=0.01,
-                value=[0.0] * 5,
+                value=[0.0] * 9,
                 done=False,
             )
 
@@ -240,10 +240,10 @@ def test_marft_integration():
         print_ok(f"ActionBuffer: {buffer.step} steps inserted")
 
         # 测试GAE计算
-        next_value = [0.0] * 5
+        next_value = [0.0] * 9
         advantages, returns = buffer.compute_gae_and_returns(next_value)
-        assert advantages.shape == (10, 5)
-        assert returns.shape == (10, 5)
+        assert advantages.shape == (10, 9)  # 10 steps, 9 agents
+        assert returns.shape == (10, 9)
         print_ok(f"GAE computed: advantages={advantages.shape}, returns={returns.shape}")
 
         # 测试奖励函数

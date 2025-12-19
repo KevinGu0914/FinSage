@@ -388,3 +388,46 @@ class BaseFactorScorer(ABC):
     def clip_exposure(exposure: float, min_val: float = -1.0, max_val: float = 1.0) -> float:
         """裁剪暴露值到合理范围"""
         return max(min_val, min(max_val, exposure))
+
+    def compute_score(
+        self,
+        symbol: str,
+        returns: Optional[pd.Series] = None,
+        date: Optional[str] = None,
+        market_regime: Optional[str] = None,
+    ) -> float:
+        """
+        计算简化的因子分数 (用于资产排序)
+
+        这是 score() 方法的简化版本，返回单个数值用于排序。
+
+        Args:
+            symbol: 资产代码
+            returns: 收益率序列
+            date: 日期 (用于构建数据)
+            market_regime: 市场体制
+
+        Returns:
+            float: 综合因子分数 [0, 1]
+        """
+        # 构建简化的数据字典
+        data = {}
+        if returns is not None and len(returns) > 0:
+            data["returns"] = returns
+            price_series = (1 + returns).cumprod()
+            # 提取标量值，避免 Series 布尔歧义错误
+            data["price"] = float(price_series.iloc[-1]) if len(price_series) > 0 else 100.0
+            data["volatility"] = float(returns.std() * np.sqrt(252))
+            data["mean_return"] = float(returns.mean() * 252)
+
+        try:
+            factor_score = self.score(
+                symbol=symbol,
+                data=data,
+                returns=returns,
+                market_regime=market_regime,
+            )
+            return factor_score.composite_score
+        except Exception as e:
+            logger.warning(f"compute_score failed for {symbol}: {e}")
+            return 0.5  # 返回中性分数
