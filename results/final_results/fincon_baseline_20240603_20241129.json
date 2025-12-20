@@ -1,0 +1,13 @@
+{
+  "strategy": "FinCon_Fair",
+  "model": "Qwen/Qwen2.5-14B-Instruct",
+  "note": "Same base model as MARFT, NO LoRA fine-tuning",
+  "final_value": 991861.280285697,
+  "total_return": -0.8138719714303022,
+  "annualized_return": -1.6710706349869153,
+  "max_drawdown": 6.257497626064169,
+  "sharpe_ratio": -0.19765062822516172,
+  "decision_count": 25,
+  "trade_count": 63,
+  "test_period": "2024-06-03 ~ 2024-11-29"
+}
