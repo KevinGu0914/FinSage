@@ -1382,6 +1382,7 @@ class SharedModelExpertManager:
     def load_adapters(self, load_dir: str):
         """从目录加载所有LoRA适配器"""
         from peft import PeftModel
+        import safetensors.torch
 
         for cfg in EXPERT_CONFIGS:
             role = cfg["role"]
@@ -1393,13 +1394,35 @@ class SharedModelExpertManager:
                 adapter_path = nested_path
 
             if os.path.exists(adapter_path):
-                # 使用 is_local=True 来加载本地适配器
-                try:
-                    self.model.load_adapter(adapter_path, adapter_name=role, is_local=True)
-                except TypeError:
-                    # 旧版peft不支持is_local参数
-                    self.model.load_adapter(adapter_path, adapter_name=role)
-                logger.info(f"Loaded adapter {role} from {adapter_path}")
+                # 检查是否有 adapter 文件
+                adapter_file = os.path.join(adapter_path, "adapter_model.safetensors")
+                if not os.path.exists(adapter_file):
+                    adapter_file = os.path.join(adapter_path, "adapter_model.bin")
+
+                if os.path.exists(adapter_file):
+                    # 使用 PeftModel.load_adapter 的兼容方式
+                    try:
+                        # 尝试新版 peft (>=0.10.0)
+                        from peft.utils import load_peft_weights
+
+                        # 直接加载权重
+                        adapters_weights = {}
+                        if adapter_file.endswith('.safetensors'):
+                            adapters_weights = safetensors.torch.load_file(adapter_file)
+                        else:
+                            adapters_weights = torch.load(adapter_file, map_location='cpu')
+
+                        # 注入到模型中
+                        self.model.load_adapter(adapter_path, adapter_name=role)
+                        logger.info(f"Loaded adapter {role} from {adapter_path}")
+                    except Exception as e:
+                        logger.warning(f"Failed to load adapter {role}: {e}")
+                        # 尝试备用方法
+                        try:
+                            self.model.load_adapter(adapter_path, role)
+                            logger.info(f"Loaded adapter {role} (fallback method)")
+                        except Exception as e2:
+                            logger.error(f"All methods failed for {role}: {e2}")
 
     def parameters(self, role: str = None):
         """获取可训练参数"""
